@@ -39,8 +39,9 @@
   },
   "scripts": {
     "start": "react-scripts start",
-    "build": "esbuild src/index.tsx --bundle --minify --sourcemap --outfile=build/notifications_bundle.js",
-    "build_tol": "esbuild src/index_tol.tsx --bundle --minify --sourcemap --outfile=build/impact_tol_bundle.js",
+"tw:build": "tailwindcss -i ./src/index.css -o ./src/tailwind.out.css --minify",
+  "build": "npm run tw:build && esbuild src/index.tsx --bundle --minify --sourcemap --loader:.css=text --outfile=build/notifications_bundle.js"
+,
     "test": "react-scripts test",
     "eject": "react-scripts eject",
     "format": "prettier --write .",

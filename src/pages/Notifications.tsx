@@ -150,7 +150,7 @@ export default function Notifications() {
       {anyError && <pre className="text-red-600 bg-red-50 p-2 rounded overflow-auto">{JSON.stringify(anyError, null, 2)}</pre>}
 
       {/* Launch panel */}
-      <div className="rounded-md border p-3 flex flex-col gap-3">
+      <div className="border-2 p-3 flex flex-col gap-3 border-zinc-600 rounded-lg">
         <div className="flex items-center justify-between">
           <div className="font-medium">Launch Incident</div>
           {selectedTemplate ? (
@@ -208,10 +208,10 @@ export default function Notifications() {
       </div>
 
       {/* Templates */}
-      <div className="flex flex-col gap-3">
-        <div className="flex items-end justify-between">
+      <div className="flex flex-col gap-3 border-2 border-zinc-400 rounded-lg">
+        <div className="px-4 py-2 flex items-end justify-between">
           <div>
-            <div className="font-medium">Incident Templates</div>
+            <div className="font-medium text-lg">Incident Templates</div>
             <div className="text-xs opacity-70">Total: {templates.totalCount}</div>
           </div>
           {templatesPager}
@@ -221,8 +221,8 @@ export default function Notifications() {
       </div>
 
       {/* Incidents */}
-      <div className="flex flex-col gap-3">
-        <div className="flex items-end justify-between">
+      <div className="flex flex-col gap-3 border-2 border-zinc-400 rounded-lg">
+        <div className="px-4 py-2 flex items-end justify-between">
           <div>
             <div className="font-medium">Incidents</div>
             <div className="text-xs opacity-70">Total: {incidents.totalCount}</div>

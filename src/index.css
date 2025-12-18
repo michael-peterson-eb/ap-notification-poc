@@ -2,6 +2,16 @@
 @tailwind components;
 @tailwind utilities;
 
+
+@layer base {
+  html {
+    font-size: 16px !important; /* try 17px or 18px if you want */
+  }
+  body {
+    @apply text-base;
+  }
+}
+
 :root {
   /* Base (light mode) colors */
   --background: 0 0% 100%;
