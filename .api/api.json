@@ -1,0 +1,11 @@
+{
+  "version": "1.0",
+  "apis": [
+    {
+      "identifier": "everbridge",
+      "source": "@everbridge/v1.0#1msr6um2bzj7aa",
+      "integrity": "sha512-JDjkGXuRYkcdZW/tRD3NKF7gyo8jDY+DfMxvxyCqk3Q2+zunyNNeB+QGpvkkIpmoUWJ03k/htkh6PFKYN+cSsQ==",
+      "installerVersion": "6.1.3"
+    }
+  ]
+}
