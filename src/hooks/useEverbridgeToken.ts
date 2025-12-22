@@ -41,7 +41,10 @@ async function fetchEverbridgeToken() {
     body: encodedParams,
   });
 
+
   const json = await resp.json();
+
+  console.log(json)
 
   if (!resp.ok) throw json;
   if (!json?.id_token) throw new Error('Token response missing id_token');
