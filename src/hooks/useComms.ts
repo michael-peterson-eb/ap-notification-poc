@@ -41,7 +41,9 @@ async function fetchCommsPage(params: { pageNumber: number; idToken: string; fil
     },
   });
 
-  const json = await resp.json().catch(() => ({}));
+  const json = await resp.json().catch((e) => {
+    console.error('Failed to parse JSON response from Everbridge Comms API',e );
+  });
   if (!resp.ok) throw { status: resp.status, ...json };
 
   return json as PagedResponse<Comm>;
