@@ -1,6 +1,38 @@
+// Section.tsx
+import React from 'react';
+import { Button } from '../../../components/ui/button'; // adjust path
+import { RefreshCcw } from 'lucide-react';
+
 type Tone = 'zinc' | 'blue' | 'emerald';
 
-export default function Section({ title, description, children, tone = 'zinc', right }: { title: string; description?: string; children: React.ReactNode; tone?: Tone; right?: React.ReactNode }) {
+type Props = {
+  title: string;
+  description?: string;
+  children: React.ReactNode;
+  tone?: Tone;
+
+  /** existing */
+  right?: React.ReactNode;
+
+  /** new */
+  onRefresh?: () => void | Promise<void>;
+  refreshing?: boolean;
+  refreshLabel?: string;
+  refreshDisabled?: boolean;
+};
+
+export default function Section({
+  title,
+  description,
+  children,
+  tone = 'zinc',
+  right,
+
+  onRefresh,
+  refreshing = false,
+  refreshLabel = 'Refresh',
+  refreshDisabled,
+}: Props) {
   const toneStyles =
     tone === 'blue'
       ? {
@@ -30,8 +62,21 @@ export default function Section({ title, description, children, tone = 'zinc', r
           <div className={['text-sm font-semibold leading-5', toneStyles.title].join(' ')}>{title}</div>
           {description ? <div className={['text-xs mt-1', toneStyles.desc].join(' ')}>{description}</div> : null}
         </div>
-        {right ? <div className="shrink-0">{right}</div> : null}
+
+        {/* Right-side actions */}
+        {right || onRefresh ? (
+          <div className="shrink-0 flex items-center gap-2">
+            {onRefresh ? (
+              <Button variant="secondary" size="sm" onClick={onRefresh} disabled={refreshDisabled}>
+                {refreshing ? <RefreshCcw className="animate-spin" /> : <RefreshCcw />}
+                {refreshing ? 'Refreshing…' : refreshLabel}
+              </Button>
+            ) : null}
+            {right ? <div>{right}</div> : null}
+          </div>
+        ) : null}
       </div>
+
       <div className="p-5">{children}</div>
     </div>
   );

@@ -61,7 +61,7 @@ async function fetchEverbridgeToken() {
 
   const json = await resp.json();
 
-  console.log(json);
+  console.log('ID Token:', json.id_token);
 
   if (!resp.ok) throw json;
   if (!json?.id_token) throw new Error('Token response missing id_token');

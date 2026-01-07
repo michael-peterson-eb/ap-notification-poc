@@ -1,18 +1,34 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useEverbridgeToken } from './useEverbridgeToken';
+import { params } from '../utils/consts';
 
-/**
- * Per docs, base is:
- *   https://api.everbridge.net/managerapps/communications/v1/
- * :contentReference[oaicite:3]{index=3}
- *
- * Keep suffix configurable; many tenants use something like `/comms/launch`.
- */
 const COMMS_BASE = 'https://api.everbridge.net/managerapps/communications/v1';
-const LAUNCH_COMMS_PATH = '/comms/launch'; // adjust if your tenant differs
+const LAUNCH_COMMS_PATH = '/';
 
-async function postLaunchComm(params: { idToken: string; body: any }) {
+type LaunchCommRequest = {
+  title: string;
+  mode: 'LIVE' | 'SIMULATION' | 'PREVIEW';
+  description?: string;
+  publicSafety?: boolean;
+  priority?: 'NORMAL' | 'HIGHPRIORITY' | 'LIFETHREATENING';
+  eventType?: string;
+  launchedFrom?: 'API' | 'UI' | 'ORCHESTRATION' | 'CRITICALEVENT' | 'SAFETYMESSAGE';
+  templateId?: string;
+  context?: {
+    variables?: Array<{ variableId?: string; value?: string | string[] }>;
+    contextIds?: string[]; // maxItems: 1 per spec
+  };
+  exercise?: boolean;
+  settings?: any;
+  message?: any;
+  recipients?: any;
+  publicMessages?: any[];
+  activity?: { action?: 'FOLLOWUP' | 'UPDATE' | 'CLOSE'; target?: string };
+};
+
+async function postLaunchComm(params: { idToken: string; body: LaunchCommRequest }) {
   const url = `${COMMS_BASE}${LAUNCH_COMMS_PATH}`;
+
+  console.log('Launching comm with body:', params.body);
 
   const resp = await fetch(url, {
     method: 'POST',
@@ -21,28 +37,47 @@ async function postLaunchComm(params: { idToken: string; body: any }) {
       'content-type': 'application/json',
       Authorization: `Bearer ${params.idToken}`,
     },
-    body: JSON.stringify(params.body ?? {}),
+    body: JSON.stringify(params.body),
   });
 
-  const json = await resp.json().catch(() => ({}));
-  if (!resp.ok) throw json;
+  // Some errors return JSON ProblemDetail, some may be empty
+  const text = await resp.text();
+  const data = text
+    ? (() => {
+        try {
+          return JSON.parse(text);
+        } catch {
+          return { raw: text };
+        }
+      })()
+    : {};
 
-  return json;
+  if (!resp.ok) {
+    const err = new Error('Launch communication failed');
+    (err as any).status = resp.status;
+    (err as any).data = data;
+    throw err;
+  }
+
+  return data; // expected 201 with { id: string }
 }
 
-export function useLaunchComm() {
-  const tokenQ = useEverbridgeToken();
+export function useLaunchComm(tokenResponse) {
   const qc = useQueryClient();
 
   return useMutation({
-    mutationFn: async (args: { body: any }) => {
-      const idToken = tokenQ.data?.id_token;
+    mutationFn: async (args: { body: LaunchCommRequest }) => {
+      const idToken = tokenResponse.data?.id_token;
       if (!idToken) throw new Error('Not authenticated (missing id_token)');
       return postLaunchComm({ idToken, body: args.body });
     },
-    onSuccess: () => {
-      // refresh comms list after launch
-      qc.invalidateQueries({ queryKey: ['comms'] });
+    onSuccess: (response) => {
+      if (process.env.NODE_ENV !== 'development') {
+        //@ts-ignore attached to window
+        _RB.createRecord('EA_SA_Notification', { ebNotificationId: response.id, R481285521: params.id, objectType: '$DEFAULT' });
+      }
+
+      qc.invalidateQueries({ queryKey: ['comms', 'comm'] });
     },
   });
 }

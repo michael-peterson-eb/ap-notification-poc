@@ -4,6 +4,7 @@ import { Tabs } from './components';
 import { useOrgId } from 'hooks/useOrgId';
 import IncidentsTab from './Tabs/IncidentsTab';
 import CommsTab from './Tabs/CommsTab';
+import { params } from 'utils/consts';
 
 type Props = {
   open: boolean;
@@ -30,6 +31,7 @@ function NotificationsContent() {
           <div>
             <h2 className="text-xl font-semibold text-zinc-900">Notifications</h2>
             <div className="mt-1 text-xs text-zinc-500">Org: {ORG_ID}</div>
+            <div className="mt-1 text-xs text-zinc-500">Plan: {params.id}</div>
           </div>
 
           <div className="flex items-center gap-3">

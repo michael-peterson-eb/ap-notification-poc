@@ -1,13 +1,36 @@
-// Mock params are for development, feel free to change the id to whatever you are working on. Make sure
-// the record id exists in your environment and that the other mock params are set accordingly.
-export const mockParams = {
-  id: '463589404', // Supply any valid id for testing
-  pageId: '7948835',
-  appTypeIntegrationName: 'EA_SA_Resource' as const, // 'EA_SA_Resource' | 'EA_SA_Dependency'
-  relationshipIntegrationName: 'EA_SA_rsProductAndService' as const, // 'EA_SA_rsProcess' | 'EA_SA_rsProductAndService'
+type Params = {
+  id: string;
 };
 
-// Platform URL is arbitrary. It just needs to be a valid page on the target origin. It can be helpful
-// to have it navigate to the page you intend to work with though.
-export const PLATFORM_URL = `https://eapps-test.eng.infiniteblue.com/prod3/m/main.jsp?pageId=${mockParams.pageId}&id=${mockParams.id}`;
+// Mock params for development
+export const mockParams: Params = {
+  id: '480121753', // plan id in new feature tenant
+};
+
+function getParamsFromDom(): Params | null {
+  if (typeof window === 'undefined') return null;
+
+  const el = document.getElementById('rjs-params');
+  const params = el?.dataset.record;
+
+  if (!params) return null;
+
+  return JSON.parse(params);
+}
+
+export const params: Params = (() => {
+  if (process.env.NODE_ENV === 'development') {
+    return mockParams;
+  }
+
+  const domParams = getParamsFromDom();
+  if (!domParams) {
+    throw new Error('Missing rjs-params data-record attribute');
+  }
+
+  return domParams;
+})();
+
+// Platform URL is arbitrary. It just needs to be a valid page on the target origin.
+export const PLATFORM_URL = 'https://eapps-test.eng.infiniteblue.com/prod1/m/main.jsp?view=main&pageId=468987151&objDefId=468975610&tabId=468991376&id=480121753';
 export const PLATFORM_ORIGIN = 'https://eapps-test.eng.infiniteblue.com';
