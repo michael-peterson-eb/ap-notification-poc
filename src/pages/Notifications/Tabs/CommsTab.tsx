@@ -80,7 +80,7 @@ const CommsTab = () => {
         cell: ({ row }) => {
           const comm = row.original;
 
-          const canCancel = comm.notificationStatus !== 'Stopped' && comm.notificationStatus !== 'Completed'; // adjust to your real statuses
+          const canCancel = comm.notificationStatus !== 'Stopped' && comm.notificationStatus !== 'Completed' && comm?.notificationStatus; // adjust to your real statuses
 
           return (
             <div className="flex justify-end">
