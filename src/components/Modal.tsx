@@ -90,7 +90,7 @@ export function Modal({ open, onClose, title, children, closeOnBackdrop = true, 
         </div>
 
         {/* Body */}
-        <div className="flex-1 overflow-auto p-4">{children}</div>
+        <div className="flex-1 overflow-auto p-4 bg-zinc-100">{children}</div>
       </div>
     </div>
   );

@@ -113,8 +113,17 @@ export function useCommsByIds(commIds: Array<string | number>, opts?: { enabled?
     })),
   });
 
-  // ✅ rows for your table (normalized)
-  const rows = useMemo(() => queries.map((q) => (q.data ? q.data.normalized : null)).filter(Boolean) as Comm[], [queries]);
+  // ✅ rows for your table (normalized), sorted by createdDate (newest first)
+  const rows = useMemo(() => {
+    const list = queries.map((q) => (q.data ? q.data.normalized : null)).filter(Boolean) as Comm[];
+
+    // Newest → oldest. Put missing createdDate at the end.
+    return list.sort((a, b) => {
+      const aT = a.createdDate ?? -Infinity;
+      const bT = b.createdDate ?? -Infinity;
+      return bT - aT;
+    });
+  }, [queries]);
 
   // ✅ raw debug info per id (success or error)
   const results = useMemo(

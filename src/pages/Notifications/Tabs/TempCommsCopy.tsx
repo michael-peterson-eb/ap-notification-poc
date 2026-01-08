@@ -48,7 +48,6 @@ const CommsTab = () => {
   // Use the list view (useComms) for local development for convenience.
   const comms = useComms({}, { enabled: isDev, token: tokenResponse });
 
-  const launchComm = useLaunchComm(tokenResponse);
   const bcicPlanCommIds = usePlanCommIds(params.id); //Passes a plan id
   const planComms = useCommsByIds(bcicPlanCommIds.ids, { enabled: !isDev && bcicPlanCommIds.ids.length > 0, token: tokenResponse });
 
@@ -121,6 +120,7 @@ const CommsTab = () => {
       setIsManualRefreshing(false);
     }
   };
+  const launchComm = useLaunchComm(tokenResponse, onRefreshComms);
 
   const isFetchingActive = isDev ? comms.isFetching : bcicPlanCommIds.isFetching || planComms.isFetching;
 

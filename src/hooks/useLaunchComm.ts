@@ -1,4 +1,4 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation } from '@tanstack/react-query';
 import { params } from '../utils/consts';
 
 const COMMS_BASE = 'https://api.everbridge.net/managerapps/communications/v1';
@@ -62,9 +62,7 @@ async function postLaunchComm(params: { idToken: string; body: LaunchCommRequest
   return data; // expected 201 with { id: string }
 }
 
-export function useLaunchComm(tokenResponse) {
-  const qc = useQueryClient();
-
+export function useLaunchComm(tokenResponse, onRefreshComms) {
   return useMutation({
     mutationFn: async (args: { body: LaunchCommRequest }) => {
       const idToken = tokenResponse.data?.id_token;
@@ -77,7 +75,10 @@ export function useLaunchComm(tokenResponse) {
         _RB.createRecord('EA_SA_Notification', { ebNotificationId: response.id, R481285521: params.id, objectType: '$DEFAULT' });
       }
 
-      qc.invalidateQueries({ queryKey: ['comms', 'comm'] });
+      setTimeout(() => {
+        console.log('Refreshing comms after launch...');
+        onRefreshComms();
+      }, 2000);
     },
   });
 }

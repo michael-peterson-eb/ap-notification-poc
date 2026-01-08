@@ -24,18 +24,16 @@ function NotificationsContent() {
   const [tab, setTab] = useState<'incidents' | 'comms'>('comms');
 
   return (
-    <div className="w-full h-full bg-zinc-50">
+    <div className="w-full h-full">
       <div className="flex flex-col gap-5 p-6">
         {/* Header */}
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <h2 className="text-xl font-semibold text-zinc-900">Notifications</h2>
+        <div className="flex items-center justify-between gap-4">
+          <h2 className="text-xl font-semibold text-zinc-900">Notifications</h2>
+
+          <div className="flex flex-col items-end">
+            {/* <Tabs tab={tab} onTabChange={setTab} /> */}
             <div className="mt-1 text-xs text-zinc-500">Org: {ORG_ID}</div>
             <div className="mt-1 text-xs text-zinc-500">Plan: {params.id}</div>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <Tabs tab={tab} onTabChange={setTab} />
           </div>
         </div>
 

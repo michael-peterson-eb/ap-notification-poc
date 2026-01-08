@@ -13,6 +13,8 @@ import { usePlanCommIds } from 'hooks/usePlanCommIds';
 import { params } from 'utils/consts';
 import { useCommsByIds } from 'hooks/useCommsByIds';
 import { useEverbridgeToken } from 'hooks/useEverbridgeToken';
+import { Select } from '../components/Select';
+import { useStopComm } from 'hooks/useStopComm';
 
 type Mode = 'LIVE' | 'SIMULATION' | 'PREVIEW';
 
@@ -21,7 +23,6 @@ const CommsTab = () => {
   const tokenResponse = useEverbridgeToken();
   const commsTemplates = useCommTemplates({}, { token: tokenResponse });
   const commEventTypes = useCommEventTypes({ token: tokenResponse });
-  const launchComm = useLaunchComm(tokenResponse);
 
   // Use the list view (useComms) for local development for convenience.
   const comms = useComms({}, { enabled: isDev, token: tokenResponse });
@@ -48,7 +49,6 @@ const CommsTab = () => {
       if (isDev) {
         await comms.query.refetch();
       } else {
-        // in prod: refresh plan ids + each comm query
         await bcicPlanCommIds.query.refetch();
         await Promise.all(planComms.queries.map((q) => q.refetch()));
       }
@@ -56,6 +56,9 @@ const CommsTab = () => {
       setIsManualRefreshing(false);
     }
   };
+
+  const launchComm = useLaunchComm(tokenResponse, onRefreshComms);
+  const stopComm = useStopComm(tokenResponse, onRefreshComms);
 
   const commColumns = useMemo<ColumnDef<Comm>[]>(() => {
     return [
@@ -67,9 +70,29 @@ const CommsTab = () => {
       { accessorKey: 'title', header: 'Title' },
       { accessorKey: 'eventType', header: 'Event Type' },
       { accessorKey: 'status', header: 'Status' },
+      { accessorKey: 'created', header: 'Created On', cell: ({ row }) => formatDate(row.original.lastModifiedDate) },
       { id: 'lastModifiedDate', header: 'Last Modified', cell: ({ row }) => formatDate(row.original.lastModifiedDate) },
+      { accessorKey: 'notificationStatus', header: 'Notification Status' },
+      {
+        id: 'actions',
+        header: '',
+        enableSorting: false,
+        cell: ({ row }) => {
+          const comm = row.original;
+
+          const canCancel = comm.notificationStatus !== 'Stopped' && comm.notificationStatus !== 'Completed'; // adjust to your real statuses
+
+          return (
+            <div className="flex justify-end">
+              <Button variant="destructive" size="sm" disabled={!canCancel || stopComm.isPending} onClick={() => stopComm.mutate({ commId: comm.id })}>
+                Stop
+              </Button>
+            </div>
+          );
+        },
+      },
     ];
-  }, []);
+  }, [stopComm]);
 
   const commsPager = (
     <div className="flex items-center gap-2">
@@ -110,15 +133,11 @@ const CommsTab = () => {
     <>
       {commsError ? <pre className="text-red-700 bg-red-50 ring-1 ring-red-200 p-3 rounded-xl overflow-auto text-xs">{JSON.stringify(commsError, null, 2)}</pre> : null}
 
-      <Section
-        title="Launch Communication"
-        tone="blue"
-        description="No JSON editing required — fill out the fields below."
-        right={launchComm.isPending ? <div className="text-xs text-emerald-700">Launching…</div> : null}>
+      <Section title="Launch Communication" tone="blue" description="Fill out the fields below." right={launchComm.isPending ? <div className="text-xs text-emerald-700">Launching…</div> : null}>
         <div className="flex flex-col gap-6">
           {/* Required */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Field label="Title *" hint="Required. Shown in the Communications interface (not the notification title).">
+            <Field label="Title" required>
               <input
                 className="w-full rounded-xl bg-white ring-1 ring-zinc-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
                 value={title}
@@ -127,26 +146,19 @@ const CommsTab = () => {
               />
             </Field>
 
-            <Field label="Mode *" hint="LIVE sends, SIMULATION launches without sending, PREVIEW renders only.">
-              <select
-                className="w-full rounded-xl bg-white ring-1 ring-zinc-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
-                value={mode}
-                onChange={(e) => setMode(e.target.value as Mode)}>
+            <Field label="Mode" required>
+              <Select value={mode} onChange={(e) => setMode(e.target.value as Mode)}>
                 <option value="LIVE">LIVE</option>
                 <option value="SIMULATION">SIMULATION</option>
                 <option value="PREVIEW">PREVIEW</option>
-              </select>
+              </Select>
             </Field>
           </div>
 
           {/* Optional basics */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Field label="Event Type">
-              <select
-                className="w-full rounded-xl bg-white ring-1 ring-zinc-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
-                value={eventType}
-                onChange={(e) => setEventType(e.target.value)}
-                disabled={commEventTypes.isLoading}>
+              <Select value={eventType} onChange={(e) => setEventType(e.target.value)} disabled={commEventTypes.isLoading} isLoading={commEventTypes.isLoading} loadingText="Loading event types…">
                 <option value="">{commEventTypes.isLoading ? 'Loading event types…' : 'Select an event type'}</option>
 
                 {commEventTypes.rows.map((et) => (
@@ -154,17 +166,13 @@ const CommsTab = () => {
                     {et.name}
                   </option>
                 ))}
-              </select>
+              </Select>
             </Field>
 
             {commEventTypes.error ? <pre className="text-red-700 bg-red-50 ring-1 ring-red-200 p-3 rounded-xl overflow-auto text-xs">{JSON.stringify(commEventTypes.error, null, 2)}</pre> : null}
 
             <Field label="Template">
-              <select
-                className="w-full rounded-xl bg-white ring-1 ring-zinc-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
-                value={templateId}
-                onChange={(e) => setTemplateId(e.target.value)}
-                disabled={commsTemplates.isLoading}>
+              <Select value={templateId} onChange={(e) => setTemplateId(e.target.value)} disabled={commsTemplates.isLoading} isLoading={commsTemplates.isLoading} loadingText="Loading templates…">
                 <option value="">{commsTemplates.isLoading ? 'Loading templates…' : 'Select a template (optional)'}</option>
 
                 {commsTemplates.rows.map((t) => (
@@ -172,10 +180,10 @@ const CommsTab = () => {
                     {(t.title ?? t.name ?? t.id) + (t.eventType ? ` — ${t.eventType}` : '')}
                   </option>
                 ))}
-              </select>
+              </Select>
             </Field>
 
-            <Field label="Description" hint="Not shown to recipients (max 500 chars).">
+            <Field label="Description">
               <textarea
                 className="w-full rounded-xl bg-white ring-1 ring-zinc-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
                 value={description}
