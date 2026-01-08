@@ -20,15 +20,31 @@ type Mode = 'LIVE' | 'SIMULATION' | 'PREVIEW';
 
 const CommsTab = () => {
   const isDev = process.env.NODE_ENV === 'development';
+
   const tokenResponse = useEverbridgeToken();
   const commsTemplates = useCommTemplates({}, { token: tokenResponse });
   const commEventTypes = useCommEventTypes({ token: tokenResponse });
 
   // Use the list view (useComms) for local development for convenience.
   const comms = useComms({}, { enabled: isDev, token: tokenResponse });
+
   // In production, use plan comm IDs to fetch relevant comms.
-  const bcicPlanCommIds = usePlanCommIds(params.id); //Passes a plan id
-  const planComms = useCommsByIds(bcicPlanCommIds.ids, { enabled: !isDev && bcicPlanCommIds.ids.length > 0, token: tokenResponse });
+  const pageSize = 10;
+  const [page, setPage] = useState(1);
+
+  const bcicPlanCommIds = usePlanCommIds(params.id);
+  const totalIds = bcicPlanCommIds.ids.length;
+  const totalPages = Math.max(1, Math.ceil(totalIds / pageSize));
+
+  const pageIds = useMemo(() => {
+    const start = (page - 1) * pageSize;
+    return bcicPlanCommIds.ids.slice(start, start + pageSize);
+  }, [bcicPlanCommIds.ids, page, pageSize]);
+
+  const planComms = useCommsByIds(pageIds, {
+    enabled: !isDev && pageIds.length > 0,
+    token: tokenResponse,
+  });
 
   //State
   const [isManualRefreshing, setIsManualRefreshing] = useState(false);
@@ -94,7 +110,8 @@ const CommsTab = () => {
     ];
   }, [stopComm]);
 
-  const commsPager = (
+  // For dev - list view pager
+  const devPager = (
     <div className="flex items-center gap-2">
       <Button variant="secondary" size="sm" onClick={comms.prevPage} disabled={comms.pageNumber <= 1}>
         Prev
@@ -108,12 +125,31 @@ const CommsTab = () => {
     </div>
   );
 
+  // For prod - individual id's are pulled view /get/:id and we paginate via BCIC plan comm ids
+  const prodPager = (
+    <div className="flex items-center gap-2">
+      <Button variant="secondary" size="sm" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page <= 1}>
+        Prev
+      </Button>
+
+      <div className="text-xs text-zinc-600">
+        Page <strong className="text-zinc-900">{page}</strong> / <strong className="text-zinc-900">{totalPages}</strong>
+        <span className="ml-2 text-zinc-400">({totalIds} total)</span>
+      </div>
+
+      <Button variant="secondary" size="sm" onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page >= totalPages}>
+        Next
+      </Button>
+    </div>
+  );
+
+  const rightSide = isDev ? devPager : prodPager;
+
   // Choose what the table should display
   const tableRows = isDev ? comms.rows : planComms.rows;
 
   // These are for the Section header
   const totalCount = isDev ? comms.totalCount : planComms.loadedCount;
-  const rightSide = isDev ? commsPager : null; // no pager in prod
   const tableError = isDev ? comms.error : (bcicPlanCommIds.error ?? planComms.error);
 
   function onLaunch() {
