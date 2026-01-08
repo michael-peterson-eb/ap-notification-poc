@@ -1,20 +1,21 @@
 import { useMemo, useState } from 'react';
 import type { ColumnDef } from '@tanstack/react-table';
 
-import { Button } from '../../../components/ui/button';
-import { Field, Section } from '../components';
-import { DataTable } from '../../../components/DataTable';
-import { formatDate } from '../../../utils/format';
-import { useComms, Comm } from '../../../hooks/useComms';
-import { useLaunchComm } from '../../../hooks/useLaunchComm';
+import { Button } from '../../../../components/ui/button';
+import { Field, Section } from '../../components';
+import { DataTable } from '../../../../components/DataTable';
+import { formatDate } from '../../../../utils/format';
+import { useComms, Comm } from '../../../../hooks/useComms';
+import { useLaunchComm } from '../../../../hooks/useLaunchComm';
 import { useCommTemplates } from 'hooks/useCommTemplates';
 import { useCommEventTypes } from 'hooks/useCommEventTypes';
 import { usePlanCommIds } from 'hooks/usePlanCommIds';
 import { params } from 'utils/consts';
 import { useCommsByIds } from 'hooks/useCommsByIds';
 import { useEverbridgeToken } from 'hooks/useEverbridgeToken';
-import { Select } from '../components/Select';
+import { Select } from '../../components/Select';
 import { useStopComm } from 'hooks/useStopComm';
+import { CommDetailView } from './CommsDetailView';
 
 type Mode = 'LIVE' | 'SIMULATION' | 'PREVIEW';
 
@@ -48,6 +49,7 @@ const CommsTab = () => {
 
   //State
   const [isManualRefreshing, setIsManualRefreshing] = useState(false);
+  const [selected, setSelected] = useState<{ id: string; row?: Comm | null } | null>(null);
   // Launch fields
   const [title, setTitle] = useState(`Comms Test - ${new Date().toLocaleString()}`);
   const [description, setDescription] = useState(`Description ${new Date().toLocaleString()}`);
@@ -83,7 +85,19 @@ const CommsTab = () => {
         header: 'Comm ID',
         cell: ({ getValue }) => <span className="font-mono text-xs">{String(getValue() ?? '')}</span>,
       },
-      { accessorKey: 'title', header: 'Title' },
+      {
+        accessorKey: 'title',
+        header: 'Title',
+        cell: ({ row }) => {
+          const comm = row.original;
+
+          return (
+            <button type="button" className="text-left text-blue-700 hover:underline" onClick={() => setSelected({ id: comm.id, row: comm })}>
+              {comm.title ?? comm.id}
+            </button>
+          );
+        },
+      },
       { accessorKey: 'eventType', header: 'Event Type' },
       { accessorKey: 'status', header: 'Status' },
       { accessorKey: 'created', header: 'Created On', cell: ({ row }) => formatDate(row.original.lastModifiedDate) },
@@ -163,6 +177,25 @@ const CommsTab = () => {
     };
 
     launchComm.mutate({ body });
+  }
+
+  if (selected) {
+    const useFullRow = !isDev; // prod uses row; dev fetches by id
+
+    return (
+      <CommDetailView
+        commId={selected.id}
+        token={tokenResponse}
+        useFullRow={useFullRow}
+        fullRow={selected.row}
+        onBack={() => setSelected(null)}
+        right={
+          <Button variant="destructive" size="sm" disabled={stopComm.isPending} onClick={() => stopComm.mutate({ commId: selected.id })}>
+            Stop
+          </Button>
+        }
+      />
+    );
   }
 
   return (

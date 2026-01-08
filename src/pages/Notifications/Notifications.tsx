@@ -3,7 +3,7 @@ import { Modal } from '../../components/Modal';
 import { Tabs } from './components';
 import { useOrgId } from 'hooks/useOrgId';
 import IncidentsTab from './Tabs/IncidentsTab';
-import CommsTab from './Tabs/CommsTab';
+import CommsTab from './Tabs/Comms/CommsTab';
 import { params } from 'utils/consts';
 
 type Props = {
