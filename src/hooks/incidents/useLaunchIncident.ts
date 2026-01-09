@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useEverbridgeToken } from './useEverbridgeToken';
+import { useEverbridgeToken } from '../useEverbridgeToken';
 
 type TemplateDetailsResponse = {
   result?: {

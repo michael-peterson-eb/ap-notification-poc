@@ -1,8 +1,9 @@
-import { Button } from '../../../../components/ui/button';
+import { Button } from 'components/ui/button';
 import { Field, Section } from '../../components';
-import { formatDate } from '../../../../utils/format';
-import type { Comm } from '../../../../hooks/useComms';
-import { useCommsByIds } from '../../../../hooks/useCommsByIds';
+import { formatDate } from 'utils/format';
+import type { Comm } from 'hooks/comms/useComms';
+import { useCommsByIds } from 'hooks/comms/useCommsByIds';
+import { RecipientsPanel } from './RecipientsPanel';
 
 type Props = {
   commId: string;
@@ -20,7 +21,6 @@ type Props = {
 
 export function CommDetailView({ commId, token, useFullRow, fullRow, onBack, right }: Props) {
   const shouldFetch = !useFullRow;
-
   const commQuery = useCommsByIds(shouldFetch ? [commId] : [], {
     enabled: shouldFetch && !!commId,
     token,
@@ -55,6 +55,8 @@ export function CommDetailView({ commId, token, useFullRow, fullRow, onBack, rig
             <Field label="Created">{formatDate((comm as any).createdDate ?? comm.lastModifiedDate)}</Field>
             <Field label="Last Modified">{formatDate(comm.lastModifiedDate)}</Field>
           </div>
+
+          <RecipientsPanel commId={commId} token={token} />
 
           <div className="mt-4">
             <div className="text-xs text-zinc-500 mb-2">Raw</div>

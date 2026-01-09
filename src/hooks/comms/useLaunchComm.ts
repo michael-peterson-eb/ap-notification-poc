@@ -1,5 +1,5 @@
 import { useMutation } from '@tanstack/react-query';
-import { params } from '../utils/consts';
+import { params } from '../../utils/consts';
 
 const COMMS_BASE = 'https://api.everbridge.net/managerapps/communications/v1';
 const LAUNCH_COMMS_PATH = '/';

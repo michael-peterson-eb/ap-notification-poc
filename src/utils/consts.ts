@@ -1,10 +1,12 @@
 type Params = {
   id: string;
+  planType: string;
 };
 
 // Mock params for development
 export const mockParams: Params = {
   id: '480121753', // plan id in new feature tenant
+  planType: 'Crisis Management',
 };
 
 function getParamsFromDom(): Params | null {
@@ -15,7 +17,11 @@ function getParamsFromDom(): Params | null {
 
   if (!params) return null;
 
-  return JSON.parse(params);
+  const parsed = JSON.parse(params) as Params;
+
+  console.log('Parsed rjs-params:', parsed);
+
+  return parsed;
 }
 
 export const params: Params = (() => {

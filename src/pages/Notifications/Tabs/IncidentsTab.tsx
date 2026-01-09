@@ -1,13 +1,13 @@
 import React, { useState, useMemo } from 'react';
 import type { ColumnDef } from '@tanstack/react-table';
-import { Button } from '../../../components/ui/button';
+import { Button } from 'components/ui/button';
 import { Field, Section } from '../components';
-import { DataTable } from '../../../components/DataTable';
-import { formatDate } from '../../../utils/format';
+import { DataTable } from 'components/DataTable';
+import { formatDate } from 'utils/format';
 import { useOrgId } from 'hooks/useOrgId';
-import { useIncidentTemplates, IncidentTemplate } from '../../../hooks/useIncidentTemplates';
-import { useIncidents, Incident } from '../../../hooks/useIncidents';
-import { useLaunchIncident } from '../../../hooks/useLaunchIncident';
+import { useIncidentTemplates, IncidentTemplate } from 'hooks/incidents/useIncidentTemplates';
+import { useIncidents, Incident } from 'hooks/incidents/useIncidents';
+import { useLaunchIncident } from 'hooks/incidents/useLaunchIncident';
 
 const IncidentsTab = () => {
   const { data: ORG_ID } = useOrgId();

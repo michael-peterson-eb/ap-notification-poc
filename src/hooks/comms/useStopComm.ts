@@ -1,23 +1,12 @@
-// hooks/useStopComm.ts
 import { useMutation } from '@tanstack/react-query';
 
 type StopCommArgs = { commId: string };
 
-type TokenLike = { access_token?: string; token?: string } | string | null | undefined;
-
-function getAccessToken(token: TokenLike) {
-  if (!token) return '';
-  if (typeof token === 'string') return token;
-  return token.access_token ?? token.token ?? '';
-}
-
-// ✅ strips comms:// (or anything://) prefixes if present
 function normalizeCommId(commId: string) {
   return commId.replace(/^[a-zA-Z]+:\/\//, '');
 }
 
 async function stopCommRequest(commIdRaw: string, accessToken: string) {
-  console.log('Stopping comm:', commIdRaw);
   const commId = normalizeCommId(commIdRaw);
 
   const url = `https://api.everbridge.net/managerapps/communications/v1/${encodeURIComponent(commId)}/stop`;

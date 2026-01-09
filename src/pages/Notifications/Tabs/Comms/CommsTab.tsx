@@ -5,16 +5,16 @@ import { Button } from '../../../../components/ui/button';
 import { Field, Section } from '../../components';
 import { DataTable } from '../../../../components/DataTable';
 import { formatDate } from '../../../../utils/format';
-import { useComms, Comm } from '../../../../hooks/useComms';
-import { useLaunchComm } from '../../../../hooks/useLaunchComm';
-import { useCommTemplates } from 'hooks/useCommTemplates';
-import { useCommEventTypes } from 'hooks/useCommEventTypes';
-import { usePlanCommIds } from 'hooks/usePlanCommIds';
+import { useComms, Comm } from '../../../../hooks/comms/useComms';
+import { useLaunchComm } from '../../../../hooks/comms/useLaunchComm';
+import { useCommTemplates } from 'hooks/comms/useCommTemplates';
+import { useCommEventTypes } from 'hooks/comms/useCommEventTypes';
+import { usePlanCommIds } from 'hooks/comms/usePlanCommIds';
 import { params } from 'utils/consts';
-import { useCommsByIds } from 'hooks/useCommsByIds';
+import { useCommsByIds } from 'hooks/comms/useCommsByIds';
 import { useEverbridgeToken } from 'hooks/useEverbridgeToken';
 import { Select } from '../../components/Select';
-import { useStopComm } from 'hooks/useStopComm';
+import { useStopComm } from 'hooks/comms/useStopComm';
 import { CommDetailView } from './CommsDetailView';
 
 type Mode = 'LIVE' | 'SIMULATION' | 'PREVIEW';
@@ -23,7 +23,7 @@ const CommsTab = () => {
   const isDev = process.env.NODE_ENV === 'development';
 
   const tokenResponse = useEverbridgeToken();
-  const commsTemplates = useCommTemplates({}, { token: tokenResponse });
+  const commsTemplates = useCommTemplates({}, { token: tokenResponse, planType: params.planType });
   const commEventTypes = useCommEventTypes({ token: tokenResponse });
 
   // Use the list view (useComms) for local development for convenience.
@@ -55,7 +55,7 @@ const CommsTab = () => {
   const [description, setDescription] = useState(`Description ${new Date().toLocaleString()}`);
   const [mode, setMode] = useState<Mode>('LIVE');
   const [eventType, setEventType] = useState('General');
-  const [templateId, setTemplateId] = useState('commsTemplate://fbb1bcb8-c18d-41df-9207-f38e855896b7');
+  const [templateId, setTemplateId] = useState('');
   // Derived
   const commsError = comms.error ?? null;
   const isFetchingActive = isDev ? comms.isFetching : bcicPlanCommIds.isFetching || planComms.isFetching;
@@ -250,6 +250,10 @@ const CommsTab = () => {
                   </option>
                 ))}
               </Select>
+
+              {commsTemplates?.rows?.length === 0 && !commsTemplates.isLoading ? (
+                <div className="text-xs text-red-500">No templates found. Please set up a template category for this plan type in plan configuration. </div>
+              ) : null}
             </Field>
 
             <Field label="Description">

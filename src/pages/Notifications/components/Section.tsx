@@ -1,20 +1,20 @@
 // Section.tsx
 import React from 'react';
-import { Button } from '../../../components/ui/button'; // adjust path
+import { Button } from '../../../components/ui/button';
 import { RefreshCcw } from 'lucide-react';
 
 type Tone = 'zinc' | 'blue' | 'emerald';
+type Variant = 'card' | 'light';
 
 type Props = {
   title: string;
   description?: string;
   children: React.ReactNode;
   tone?: Tone;
+  variant?: Variant;
 
-  /** existing */
   right?: React.ReactNode;
 
-  /** new */
   onRefresh?: () => void | Promise<void>;
   refreshing?: boolean;
   refreshLabel?: string;
@@ -26,8 +26,8 @@ export default function Section({
   description,
   children,
   tone = 'zinc',
+  variant = 'card',
   right,
-
   onRefresh,
   refreshing = false,
   refreshLabel = 'Refresh',
@@ -40,6 +40,7 @@ export default function Section({
           title: 'text-blue-950',
           desc: 'text-blue-700/80',
           ring: 'ring-blue-100',
+          divider: 'border-blue-100',
         }
       : tone === 'emerald'
         ? {
@@ -47,23 +48,38 @@ export default function Section({
             title: 'text-emerald-950',
             desc: 'text-emerald-700/80',
             ring: 'ring-emerald-100',
+            divider: 'border-emerald-100',
           }
         : {
             header: 'bg-gradient-to-r from-zinc-100/70 to-white border-zinc-200/70',
             title: 'text-zinc-900',
             desc: 'text-zinc-600',
             ring: 'ring-zinc-200/60',
+            divider: 'border-zinc-200/60',
           };
 
+  const isLight = variant === 'light';
+
+  const wrapClass = isLight
+    ? 'bg-transparent' // no card chrome
+    : ['rounded-2xl bg-white shadow-sm ring-1', toneStyles.ring].join(' ');
+
+  const headerClass = isLight
+    ? ['flex items-start justify-between gap-4', 'px-0 py-2 border-b', toneStyles.divider].join(' ')
+    : ['border-b px-5 py-4 rounded-t-2xl flex items-start justify-between gap-4', toneStyles.header].join(' ');
+
+  const bodyClass = isLight ? 'pt-4' : 'p-5';
+
   return (
-    <div className={['rounded-2xl bg-white shadow-sm ring-1', toneStyles.ring].join(' ')}>
-      <div className={['border-b px-5 py-4 rounded-t-2xl flex items-start justify-between gap-4', toneStyles.header].join(' ')}>
+    <div className={wrapClass}>
+      <div className={headerClass}>
         <div>
-          <div className={['text-sm font-semibold leading-5', toneStyles.title].join(' ')}>{title}</div>
+          <div className={[isLight ? 'text-xs font-semibold' : 'text-sm font-semibold leading-5', toneStyles.title].join(' ')}>
+            {title}
+          </div>
           {description ? <div className={['text-xs mt-1', toneStyles.desc].join(' ')}>{description}</div> : null}
         </div>
 
-        {/* Right-side actions */}
         {right || onRefresh ? (
           <div className="shrink-0 flex items-center gap-2">
             {onRefresh ? (
@@ -77,7 +93,7 @@ export default function Section({
         ) : null}
       </div>
 
-      <div className="p-5">{children}</div>
+      <div className={bodyClass}>{children}</div>
     </div>
   );
 }

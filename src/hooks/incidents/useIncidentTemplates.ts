@@ -1,39 +1,55 @@
 import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { useEverbridgeToken } from './useEverbridgeToken';
-import type { PagedResponse } from './useIncidentTemplates';
+import { useEverbridgeToken } from '../useEverbridgeToken';
 
-export type Incident = {
+export type PagedResponse<T> = {
+  message?: string;
+  firstPageUri?: string;
+  nextPageUri?: string;
+  lastPageUri?: string;
+  page: {
+    pageSize: number;
+    start: number;
+    data: T[];
+    totalCount: number;
+    totalPageCount: number;
+    currentPageNo: number;
+  };
+};
+
+export type IncidentTemplate = {
   id: number;
   name: string;
-  incidentStatus?: string;
-  incidentType?: string;
+  templateStatus?: string;
+  category?: { id: number; name: string };
   lastModifiedDate?: number;
+  createdName?: string;
+  lastModifiedName?: string;
   [k: string]: any;
 };
 
-async function fetchIncidentsPage(params: { orgId: string; pageNumber: number; idToken: string }) {
+async function fetchTemplatesPage(params: { orgId: string; pageNumber: number; idToken: string }) {
   const { orgId, pageNumber, idToken } = params;
+  const url = `https://api.everbridge.net/rest/incidentTemplates/${orgId}?skipPaging=false&pageNumber=${pageNumber}`;
 
-  const url = `https://api.everbridge.net/rest/incidents/${orgId}?skipPaging=false&pageNumber=${pageNumber}`;
   const resp = await fetch(url, {
     headers: { accept: 'application/json', Authorization: `Bearer ${idToken}` },
   });
   const json = await resp.json();
   if (!resp.ok) throw json;
-  return json as PagedResponse<Incident>;
+  return json as PagedResponse<IncidentTemplate>;
 }
 
-export function useIncidents(orgId: string, initialPage = 1) {
+export function useIncidentTemplates(orgId: string, initialPage = 1) {
   const [pageNumber, setPageNumber] = useState(initialPage);
 
   const tokenQ = useEverbridgeToken();
   const idToken = tokenQ.data?.id_token;
 
   const query = useQuery({
-    queryKey: ['incidents', orgId, pageNumber, idToken],
+    queryKey: ['incidentTemplates', orgId, pageNumber, idToken],
     enabled: Boolean(orgId) && Boolean(idToken),
-    queryFn: () => fetchIncidentsPage({ orgId, pageNumber, idToken: idToken as string }),
+    queryFn: () => fetchTemplatesPage({ orgId, pageNumber, idToken: idToken as string }),
     placeholderData: (prev) => prev,
     retry: 1,
   });
@@ -58,16 +74,19 @@ export function useIncidents(orgId: string, initialPage = 1) {
     tokenQ,
     idToken,
 
+    // query state
     query,
     isLoading: tokenQ.isLoading || query.isLoading,
     isFetching: query.isFetching,
     error: tokenQ.error ?? query.error ?? null,
 
+    // data
     rows,
     page,
     totalPages,
     totalCount,
 
+    // pagination controls (owned by hook)
     ...api,
   };
 }
