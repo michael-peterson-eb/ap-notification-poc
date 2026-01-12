@@ -20,6 +20,7 @@ async function fetchEverbridgeToken() {
     encodedParams.set('username', process.env.REACT_APP_EVERBRIDGE_USERNAME);
     encodedParams.set('password', process.env.REACT_APP_EVERBRIDGE_PASSWORD);
     encodedParams.set('roleId', process.env.REACT_APP_EVERBRIDGE_ROLE_ID);
+    encodedParams.set('scope', 'openid user-profile role');
   } else {
     type SettingsRow = [
       string, // eb_client_id
@@ -48,6 +49,7 @@ async function fetchEverbridgeToken() {
     encodedParams.set('username', username);
     encodedParams.set('password', password);
     encodedParams.set('roleId', roleId);
+    encodedParams.set('scope', 'openid user-profile role');
   }
 
   const resp = await fetch('https://api.everbridge.net/authorization/v1/tokens', {
@@ -60,8 +62,6 @@ async function fetchEverbridgeToken() {
   });
 
   const json = await resp.json();
-
-  console.log('ID Token:', json.id_token);
 
   if (!resp.ok) throw json;
   if (!json?.id_token) throw new Error('Token response missing id_token');

@@ -16,6 +16,7 @@ export type CommTemplate = {
 };
 
 const TEMPLATES_BASE = 'https://api.everbridge.net/managerapps/communications/v1/templates/';
+const TEMPLATES_LOOKUP = 'https://api.everbridge.net/managerapps/communications/v1/templates/lookup?sortBy=name&sortDirection=asc';
 
 function normalizeTemplate(raw: any): CommTemplate {
   return {
@@ -64,10 +65,44 @@ async function fetchCommTemplates(idToken: string, filters?: Record<string, any>
   return rows.map(normalizeTemplate);
 }
 
-export function useCommTemplates(
-  filters?: Record<string, any>,
-  opts?: { enabled?: boolean; token: any; planType?: string }
-) {
+// NEW: lookup templates by IDs (CSV in bcicTemplateCategory)
+async function fetchCommTemplatesByIds(idToken: string, csv: string) {
+  const ids = csv
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
+
+  if (!ids.length) return [];
+
+  const resp = await fetch(TEMPLATES_LOOKUP, {
+    method: 'POST',
+    headers: {
+      accept: 'application/json',
+      'content-type': 'application/json',
+      Authorization: `Bearer ${idToken}`,
+    },
+    body: JSON.stringify({ ids }),
+  });
+
+  const text = await resp.text();
+  const json = text
+    ? (() => {
+        try {
+          return JSON.parse(text);
+        } catch {
+          return { raw: text };
+        }
+      })()
+    : {};
+
+  if (!resp.ok) throw new Error(JSON.stringify({ status: resp.status, ...json }));
+
+  const rows = Array.isArray(json) ? json : Array.isArray((json as any)?.data) ? (json as any).data : [];
+
+  return rows.map(normalizeTemplate);
+}
+
+export function useCommTemplates(filters?: Record<string, any>, opts?: { enabled?: boolean; token: any; planType?: string }) {
   const baseEnabled = (opts?.enabled ?? true) && !!opts?.token?.data?.id_token;
   const isDev = process.env.NODE_ENV === 'development';
   const idToken = opts?.token?.data?.id_token as string | undefined;
@@ -81,13 +116,7 @@ export function useCommTemplates(
     retry: 0,
     queryFn: async () => {
       // @ts-expect-error - global _RB
-      const rows = await _RB.selectQuery(
-        ['bcicTemplateCategory'],
-        'EA_SA_PlanType',
-        `id = ${opts!.planType}`,
-        1,
-        true
-      );
+      const rows = await _RB.selectQuery(['bcicTemplateCategory'], 'EA_SA_PlanType', `id = ${opts!.planType}`, 1, true);
 
       const first = Array.isArray(rows) ? rows[0] : rows?.data?.[0];
       const category = first?.bcicTemplateCategory;
@@ -101,14 +130,15 @@ export function useCommTemplates(
 
   // --- 2) Effective filters ---
   // Dev: just use filters (or none) and pull everything
-  // Prod: require category and add it to filters
+  // Prod: (NO LONGER USED for category filtering) keep as-is for minimal diff
   const effectiveFilters = useMemo(() => {
     if (isDev) return filters; // dev can be undefined -> pull all templates
 
     // prod: only meaningful if we have a category
     if (!planCategory) return undefined;
 
-    return filters ? { ...filters, category: planCategory } : { category: planCategory };
+    // NOTE: category is now a CSV of template IDs; do not add it to filters anymore
+    return filters;
   }, [filters, isDev, planCategory]);
 
   // --- 3) Template query enabled rules ---
@@ -117,42 +147,29 @@ export function useCommTemplates(
     !!idToken &&
     (isDev // dev: no planType/category required
       ? true
-      : hasPlanType && !!planCategory); // prod: must have planType AND category
+      : hasPlanType && !!planCategory); // prod: must have planType AND csv
 
   const templatesQuery = useQuery({
-    queryKey: ['commTemplates', isDev ? 'dev' : opts?.planType, effectiveFilters],
+    queryKey: ['commTemplates', isDev ? 'dev' : opts?.planType, isDev ? effectiveFilters : planCategory],
     enabled: templatesEnabled,
     retry: 0,
-    queryFn: () => fetchCommTemplates(idToken!, effectiveFilters),
+    queryFn: () => (isDev ? fetchCommTemplates(idToken!, effectiveFilters) : fetchCommTemplatesByIds(idToken!, planCategory!)),
   });
 
   // --- 4) Loading state rules ---
   // If prod is missing planType or missing category, we should NOT appear to be loading forever.
-  const isLoading =
-    opts?.token.isLoading ||
-    (!isDev && hasPlanType ? planCategoryQuery.isLoading : false) ||
-    templatesQuery.isLoading;
+  const isLoading = opts?.token.isLoading || (!isDev && hasPlanType ? planCategoryQuery.isLoading : false) || templatesQuery.isLoading;
 
-  const isFetching =
-    (!isDev && hasPlanType ? planCategoryQuery.isFetching : false) ||
-    templatesQuery.isFetching;
+  const isFetching = (!isDev && hasPlanType ? planCategoryQuery.isFetching : false) || templatesQuery.isFetching;
 
   // Optional: provide a more explicit error when prod has planType but no category
-  const missingCategoryError =
-    !isDev && hasPlanType && planCategoryQuery.isSuccess && !planCategory
-      ? new Error('No template category configured for this plan type.')
-      : null;
+  const missingCategoryError = !isDev && hasPlanType && planCategoryQuery.isSuccess && !planCategory ? new Error('No template IDs configured for this plan type.') : null;
 
   return {
     query: templatesQuery,
     isLoading,
     isFetching,
-    error:
-      opts?.token.error ??
-      planCategoryQuery.error ??
-      missingCategoryError ??
-      templatesQuery.error ??
-      null,
+    error: opts?.token.error ?? planCategoryQuery.error ?? missingCategoryError ?? templatesQuery.error ?? null,
     rows: templatesQuery.data ?? [],
     planCategory,
   };

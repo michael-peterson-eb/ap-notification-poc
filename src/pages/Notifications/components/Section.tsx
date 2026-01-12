@@ -65,7 +65,7 @@ export default function Section({
     : ['rounded-2xl bg-white shadow-sm ring-1', toneStyles.ring].join(' ');
 
   const headerClass = isLight
-    ? ['flex items-start justify-between gap-4', 'px-0 py-2 border-b', toneStyles.divider].join(' ')
+    ? ['flex items-center justify-between gap-4', 'px-0 py-2 border-b', toneStyles.divider].join(' ')
     : ['border-b px-5 py-4 rounded-t-2xl flex items-start justify-between gap-4', toneStyles.header].join(' ');
 
   const bodyClass = isLight ? 'pt-4' : 'p-5';
@@ -74,7 +74,7 @@ export default function Section({
     <div className={wrapClass}>
       <div className={headerClass}>
         <div>
-          <div className={[isLight ? 'text-xs font-semibold' : 'text-sm font-semibold leading-5', toneStyles.title].join(' ')}>
+          <div className={[isLight ? 'text-base font-semibold' : 'text-lg font-semibold leading-5', toneStyles.title].join(' ')}>
             {title}
           </div>
           {description ? <div className={['text-xs mt-1', toneStyles.desc].join(' ')}>{description}</div> : null}

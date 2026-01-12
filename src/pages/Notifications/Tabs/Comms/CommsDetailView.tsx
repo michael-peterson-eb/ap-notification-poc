@@ -4,6 +4,7 @@ import { formatDate } from 'utils/format';
 import type { Comm } from 'hooks/comms/useComms';
 import { useCommsByIds } from 'hooks/comms/useCommsByIds';
 import { RecipientsPanel } from './RecipientsPanel';
+import { ActivitiesPanel } from './ActivitesPanel';
 
 type Props = {
   commId: string;
@@ -56,7 +57,13 @@ export function CommDetailView({ commId, token, useFullRow, fullRow, onBack, rig
             <Field label="Last Modified">{formatDate(comm.lastModifiedDate)}</Field>
           </div>
 
-          <RecipientsPanel commId={commId} token={token} />
+          <div className="mt-4">
+            <RecipientsPanel commId={commId} token={token} />
+          </div>
+
+          <div className="mt-4">
+            <ActivitiesPanel commId={commId} token={token} />
+          </div>
 
           <div className="mt-4">
             <div className="text-xs text-zinc-500 mb-2">Raw</div>
