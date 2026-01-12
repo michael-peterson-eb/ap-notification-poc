@@ -25,7 +25,7 @@ function NotificationsContent() {
 
   return (
     <div className="w-full h-full">
-      <div className="flex flex-col gap-5 p-6">
+      <div className="flex flex-col gap-3 p-6">
         {/* Header */}
         <div className="flex items-center justify-between gap-4">
           <h2 className="text-xl font-semibold text-zinc-900">Notifications</h2>
