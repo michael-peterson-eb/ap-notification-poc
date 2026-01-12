@@ -16,7 +16,7 @@ export type CommTemplate = {
 };
 
 const TEMPLATES_BASE = 'https://api.everbridge.net/managerapps/communications/v1/templates/';
-const TEMPLATES_LOOKUP = 'https://api.everbridge.net/managerapps/communications/v1/templates/lookup?sortBy=name&sortDirection=asc';
+const TEMPLATES_LOOKUP = 'https://api.everbridge.net/managerapps/communications/v1/templates/lookup/';
 
 function normalizeTemplate(raw: any): CommTemplate {
   return {
@@ -81,7 +81,7 @@ async function fetchCommTemplatesByIds(idToken: string, csv: string) {
       'content-type': 'application/json',
       Authorization: `Bearer ${idToken}`,
     },
-    body: JSON.stringify({ ids }),
+    body: JSON.stringify({ ids, sortBy: 'name', sortDirection: 'asc' }),
   });
 
   const text = await resp.text();
