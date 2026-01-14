@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import type { ColumnDef } from '@tanstack/react-table';
 
 import { Button } from '../../../../components/ui/button';
@@ -17,7 +17,66 @@ import { Select } from '../../components/Select';
 import { useStopComm } from 'hooks/comms/useStopComm';
 import { CommDetailView } from './CommsDetailView';
 
+// ✅ NEW: fetch specific template detail by id
+import { useCommTemplateById, CommTemplateDetail } from 'hooks/comms/useCommTemplatesByIds';
+
 type Mode = 'LIVE' | 'SIMULATION' | 'PREVIEW';
+
+// ✅ NEW: helper to format template recipients into readable lines
+function formatRecipients(template: CommTemplateDetail | null): string[] {
+  const r = template?.recipients;
+  if (!r) return [];
+
+  const lines: string[] = [];
+
+  const pushList = (label: string, arr?: any[]) => {
+    if (!Array.isArray(arr) || arr.length === 0) return;
+
+    for (const item of arr) {
+      if (!item) continue;
+
+      if (item.type === 'Name') {
+        const parts = [item.firstName, item.middleInitial, item.lastName, item.suffix].filter(Boolean);
+        lines.push(`${label}: ${parts.join(' ')}`);
+        continue;
+      }
+
+      if (item.type === 'Id' && item.id) {
+        lines.push(`${label}: ID ${item.id}`);
+        continue;
+      }
+
+      if (item.type === 'ExternalId' && item.externalId) {
+        lines.push(`${label}: ExternalId ${item.externalId}`);
+        continue;
+      }
+
+      if (item.type === 'ResultSet' && item.id) {
+        lines.push(`${label}: ResultSet ${item.id}`);
+        continue;
+      }
+
+      // fallback
+      try {
+        lines.push(`${label}: ${JSON.stringify(item)}`);
+      } catch {
+        lines.push(`${label}: [unprintable item]`);
+      }
+    }
+  };
+
+  pushList('Contact', r.contacts);
+  pushList('Group', r.groups);
+  pushList('Rule', r.rules);
+  pushList('Query', r.query);
+  pushList('PublicUser', r.publicUsers);
+
+  if (r.excluded?.contacts?.length) {
+    pushList('Excluded Contact', r.excluded.contacts);
+  }
+
+  return lines;
+}
 
 const CommsTab = () => {
   const isDev = process.env.NODE_ENV === 'development';
@@ -50,12 +109,36 @@ const CommsTab = () => {
   //State
   const [isManualRefreshing, setIsManualRefreshing] = useState(false);
   const [selected, setSelected] = useState<{ id: string; row?: Comm | null } | null>(null);
+
   // Launch fields
   const [title, setTitle] = useState(`Comms Test - ${new Date().toLocaleString()}`);
   const [description, setDescription] = useState(`Description ${new Date().toLocaleString()}`);
   const [mode, setMode] = useState<Mode>('LIVE');
   const [eventType, setEventType] = useState('General');
-  const [templateId, setTemplateId] = useState('');
+  const [templateId, setTemplateId] = useState<string | null>(null);
+
+  // ✅ NEW: confirmation UI + selected template detail stored in state
+  const [showLaunchConfirm, setShowLaunchConfirm] = useState(false);
+  const [selectedTemplateDetail, setSelectedTemplateDetail] = useState<CommTemplateDetail | null>(null);
+
+  // ✅ NEW: fetch template detail whenever templateId changes
+  const templateDetailQuery = useCommTemplateById(templateId, {
+    token: tokenResponse,
+    enabled: Boolean(templateId),
+  });
+
+  console.log('templateDetailQuery', templateDetailQuery);
+
+  useEffect(() => {
+    if (templateDetailQuery.template) {
+      setSelectedTemplateDetail(templateDetailQuery.template);
+    } else if (!templateId) {
+      setSelectedTemplateDetail(null);
+    }
+  }, [templateId, templateDetailQuery.template]);
+
+  const recipientsPreview = useMemo(() => formatRecipients(selectedTemplateDetail), [selectedTemplateDetail]);
+
   // Derived
   const commsError = comms.error ?? null;
   const isFetchingActive = isDev ? comms.isFetching : bcicPlanCommIds.isFetching || planComms.isFetching;
@@ -99,9 +182,10 @@ const CommsTab = () => {
         },
       },
       { accessorKey: 'eventType', header: 'Event Type' },
+      { accessorKey: 'mode', header: 'Mode' },
       { accessorKey: 'status', header: 'Status' },
       { accessorKey: 'created', header: 'Created On', cell: ({ row }) => formatDate(row.original.lastModifiedDate) },
-      { id: 'lastModifiedDate', header: 'Last Modified', cell: ({ row }) => formatDate(row.original.lastModifiedDate) },
+      // { id: 'lastModifiedDate', header: 'Last Modified', cell: ({ row }) => formatDate(row.original.lastModifiedDate) },
       { accessorKey: 'notificationStatus', header: 'Notification Status' },
       {
         id: 'actions',
@@ -110,7 +194,7 @@ const CommsTab = () => {
         cell: ({ row }) => {
           const comm = row.original;
 
-          const canCancel = comm.notificationStatus !== 'Stopped' && comm.notificationStatus !== 'Completed' && comm?.notificationStatus; // adjust to your real statuses
+          const canCancel = comm.notificationStatus !== 'Stopped' && comm.notificationStatus !== 'Completed' && comm?.notificationStatus;
 
           return (
             <div className="flex justify-end">
@@ -166,7 +250,8 @@ const CommsTab = () => {
   const totalCount = isDev ? comms.totalCount : planComms.loadedCount;
   const tableError = isDev ? comms.error : (bcicPlanCommIds.error ?? planComms.error);
 
-  function onLaunch() {
+  // ✅ NEW: extracted “actually launch” so confirm button can call it
+  function doLaunch() {
     // LaunchCommRequest
     const body: any = {
       title,
@@ -177,6 +262,23 @@ const CommsTab = () => {
     };
 
     launchComm.mutate({ body });
+  }
+
+  // ✅ UPDATED: Launch now opens confirmation if template is selected (and we have recipient info)
+  function onLaunch() {
+    // If no template selected, just launch as before.
+    if (!templateId) {
+      doLaunch();
+      return;
+    }
+
+    // If template selected but details are still loading, block launch until loaded
+    if (templateDetailQuery.isFetching) {
+      return;
+    }
+
+    // Show confirmation panel (even if recipients list is empty; user can decide)
+    setShowLaunchConfirm(true);
   }
 
   if (selected) {
@@ -252,7 +354,22 @@ const CommsTab = () => {
               </Select>
 
               {commsTemplates?.rows?.length === 0 && !commsTemplates.isLoading ? (
-                <div className="text-xs text-red-500">No templates found. Please set up a template category for this plan type in plan configuration. </div>
+                <div className="text-xs text-red-500">No templates found. Please set up a template category for this plan type in plan configuration.</div>
+              ) : null}
+
+              {/* ✅ NEW: show template detail loading/error feedback */}
+              {templateId && templateDetailQuery.isFetching ? <div className="text-xs text-zinc-600 mt-1">Loading template details…</div> : null}
+
+              {templateId && templateDetailQuery.isError ? (
+                <pre className="text-red-700 bg-red-50 ring-1 ring-red-200 p-3 rounded-xl overflow-auto text-xs mt-2">
+                  {JSON.stringify(
+                    {
+                      message: (templateDetailQuery.error as any)?.message,
+                    },
+                    null,
+                    2
+                  )}
+                </pre>
               ) : null}
             </Field>
 
@@ -266,10 +383,63 @@ const CommsTab = () => {
             </Field>
           </div>
 
+          {/* ✅ NEW: Launch confirmation panel */}
+          {showLaunchConfirm ? (
+            <div className="rounded-xl bg-amber-50 ring-1 ring-amber-200 p-4">
+              <div className="font-semibold text-amber-900">Confirm launch</div>
+              <div className="text-sm text-amber-900/80 mt-1">
+                You’re about to send <span className="font-medium">{title}</span>
+                {templateId ? (
+                  <>
+                    {' '}
+                    using template <span className="font-medium">{selectedTemplateDetail?.name ?? selectedTemplateDetail?.id ?? templateId}</span>.
+                  </>
+                ) : null}
+              </div>
+
+              <div className="mt-3">
+                <div className="mt-1 flex items-baseline gap-1 text-xs text-amber-900/70">
+                  <span>This will go to</span>
+                  <span className="font-extrabold">{recipientsPreview.length}</span>
+                  <span>recipient{recipientsPreview.length === 1 ? '' : 's'}.</span>
+                </div>
+
+                {templateId && !selectedTemplateDetail ? (
+                  <div className="text-xs text-amber-900/70 mt-1">No recipient details available (template detail not loaded).</div>
+                ) : recipientsPreview.length === 0 ? (
+                  <div className="text-xs text-amber-900/70 mt-1">No recipients found in this template detail.</div>
+                ) : (
+                  <ul className="mt-2 list-disc pl-5 text-xs text-amber-900/90 max-h-48 overflow-auto">
+                    {recipientsPreview.map((line, idx) => (
+                      <li key={idx} className="font-mono">
+                        {line}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+
+              <div className="mt-4 flex items-center gap-2 flex-wrap">
+                <Button variant="secondary" onClick={() => setShowLaunchConfirm(false)} disabled={launchComm.isPending}>
+                  Cancel
+                </Button>
+
+                <Button
+                  onClick={() => {
+                    setShowLaunchConfirm(false);
+                    doLaunch();
+                  }}
+                  disabled={launchComm.isPending || !title}>
+                  Confirm & Launch
+                </Button>
+              </div>
+            </div>
+          ) : null}
+
           {/* Launch button + results */}
           <div className="flex items-start gap-3 flex-wrap">
-            <Button onClick={onLaunch} disabled={launchComm.isPending || !title}>
-              Launch
+            <Button onClick={onLaunch} disabled={!templateId || showLaunchConfirm || launchComm.isPending || !title || (templateId ? templateDetailQuery.isFetching : false)}>
+              {templateId && templateDetailQuery.isFetching ? 'Loading template…' : 'Launch'}
             </Button>
 
             {launchComm.isError ? (
