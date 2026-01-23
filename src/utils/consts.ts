@@ -1,12 +1,19 @@
 type Params = {
   id: string;
   planType: string;
+  variableSelections: { label: string; value: string }[];
 };
 
 // Mock params for development
 export const mockParams: Params = {
   id: '480121753', // plan id in new feature tenant
   planType: 'Crisis Management',
+  variableSelections: [
+    { label: 'Plan', value: 'Mock Plan Name' },
+    { label: 'Plan Type Name', value: 'Mock Plan Type' },
+    { label: 'Editors', value: 'Mock User1, Mock User2' },
+    { label: 'Workflow Status', value: 'Created' },
+  ],
 };
 
 function getParamsFromDom(): Params | null {

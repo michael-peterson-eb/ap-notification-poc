@@ -1,8 +1,8 @@
 import { Button } from 'components/ui/button';
 import { Field, Section } from '../../components';
 import { formatDate } from 'utils/format';
-import type { Comm } from 'hooks/comms/useComms';
-import { useCommsByIds } from 'hooks/comms/useCommsByIds';
+import type { Comm } from 'hooks/comms/list/useComms';
+import { useCommsByIds } from 'hooks/comms/list/useCommsByIds';
 import { RecipientsPanel } from './RecipientsPanel';
 import { ActivitiesPanel } from './ActivitesPanel';
 

@@ -72,8 +72,6 @@ export const useCommTemplateById = (
 
       const resp = await res.json();
 
-      console.log('RESP')
-
       return resp;
     },
     staleTime: 60_000,

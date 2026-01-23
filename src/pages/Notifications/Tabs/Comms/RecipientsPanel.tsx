@@ -8,8 +8,8 @@ import { DataTable } from 'components/DataTable';
 import { Section } from '../../components';
 
 import { COMM_STATUS_META } from 'utils/comms/conts';
-import { useCommConfirmationStatus } from 'hooks/comms/useCommConfirmationStatus';
-import { useCommRecipientLogs, CommRecipientLog } from 'hooks/comms/useCommRecipientLogs';
+import { useCommConfirmationStatus } from 'hooks/comms/details/useCommConfirmationStatus';
+import { useCommRecipientLogs, CommRecipientLog } from 'hooks/comms/details/useCommRecipientLogs';
 
 const DEFAULT_STATUSES = ['Confirmed', 'ConfirmedLate', 'Attempted', 'Duplicate', 'Unreachable'];
 

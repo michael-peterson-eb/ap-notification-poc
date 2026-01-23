@@ -1,11 +1,8 @@
 import { useMemo } from 'react';
-import type { ColumnDef } from '@tanstack/react-table';
 
-import { DataTable } from 'components/DataTable';
 import { Section } from '../../components';
 
-import { formatDate } from 'utils/format';
-import { useCommActivities, CommActivity } from 'hooks/comms/useCommActivities';
+import { useCommActivities, CommActivity } from 'hooks/comms/details/useCommActivities';
 import { ClipboardList, Mail } from 'lucide-react';
 
 type Props = {

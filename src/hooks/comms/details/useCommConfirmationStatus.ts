@@ -57,12 +57,13 @@ export function useCommConfirmationStatus(commId: string | null, opts: Options) 
     if (!d) return [];
 
     return [
-      { name: 'Confirmed', value: 3, fill: '#16a34a' }, // green
-      { name: 'Not Confirmed', value: 8, fill: '#f59e0b' }, // amber
-      { name: 'Unreachable', value: 2, fill: '#ef4444' }, // red
-      { name: 'Confirmed Late', value: 1, fill: '#3b82f6' }, // blue
-    ].filter((x) => x.value > 0 || d.totalCount === 0);
+      { name: 'Confirmed', value: d.confirmedCount },
+      { name: 'Pending', value: d.pendingConfirmedCount },
+      { name: 'Unreachable', value: d.unreachableCount },
+      { name: 'Confirmed Late', value: d.confirmedLateCount },
+    ].filter((x) => x.value > 0 || d.totalCount === 0); // keep zeros if total is 0
   }, [query.data]);
+
   return {
     query,
     data: query.data ?? null,

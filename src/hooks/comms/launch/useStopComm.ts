@@ -1,4 +1,4 @@
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 type StopCommArgs = { commId: string };
 
@@ -45,7 +45,9 @@ async function stopCommRequest(commIdRaw: string, accessToken: string) {
   return data ?? { ok: true };
 }
 
-export function useStopComm(tokenResponse: any, onStopped?: () => void) {
+export function useStopComm(tokenResponse: any) {
+  const queryClient = useQueryClient();
+
   return useMutation({
     mutationKey: ['stopComm'],
     mutationFn: async ({ commId }: StopCommArgs) => {
@@ -55,7 +57,20 @@ export function useStopComm(tokenResponse: any, onStopped?: () => void) {
       return stopCommRequest(commId, idToken);
     },
     onSuccess: async () => {
-      await onStopped?.();
+      try {
+        await queryClient.invalidateQueries({
+          predicate: (q) => {
+            try {
+              const key = q.queryKey;
+              return Array.isArray(key) && key[0] === 'comm';
+            } catch {
+              return false;
+            }
+          },
+        });
+      } catch (e) {
+        console.error('Failed to invalidate per-comm queries', e);
+      }
     },
   });
 }
