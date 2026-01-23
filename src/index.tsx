@@ -2,6 +2,7 @@ import ReactDOM from 'react-dom/client';
 import App from './App';
 import './index.css';
 import { injectStyles } from './injectStyles';
+import { hasAnyNotificationsPermission } from 'utils/permissions';
 
 declare global {
   interface Window {
@@ -12,7 +13,7 @@ declare global {
 const isDev = process.env.NODE_ENV === 'development';
 
 function ensureReactMountNode() {
-  // DEV: use CRA/Vite root if present so you can just run the app normally
+  // DEV: use root if present so you can just run the app normally
   if (isDev) {
     const devRoot = document.getElementById('root');
     if (devRoot) return devRoot;
@@ -96,7 +97,9 @@ function injectHeaderNotificationsButton() {
 if (!isDev) {
   // host-only concerns
   injectStyles();
-  injectHeaderNotificationsButton();
+  if (hasAnyNotificationsPermission()) {
+    injectHeaderNotificationsButton();
+  }
 }
 
 const mountNode = ensureReactMountNode();
