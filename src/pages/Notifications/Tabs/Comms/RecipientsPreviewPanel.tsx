@@ -158,12 +158,6 @@ const RecipientsPanelPreview: React.FC<Props> = ({ title, templateId, selectedTe
                 <div className="flex items-center justify-between gap-2">
                   <div className="text-xs text-amber-900/70">
                     Showing page <span className="font-mono">{pageNumber}</span> of <span className="font-mono">{totalPages}</span>
-                    {typeof totalCount === 'number' ? (
-                      <>
-                        {' '}
-                        · <span className="font-mono">{totalCount}</span> total
-                      </>
-                    ) : null}
                   </div>
 
                   <div className="flex items-center gap-2">
