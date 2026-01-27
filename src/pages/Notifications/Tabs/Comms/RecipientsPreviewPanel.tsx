@@ -1,116 +1,203 @@
-import React, { useMemo } from 'react';
-import { Button } from '../../../../components/ui/button';
+import React, { useMemo, useState } from 'react';
+import { Button } from 'components/ui/button';
 import type { CommTemplateDetail } from 'hooks/comms/list/useCommTemplatesByIds';
+import { useCreateContactBuilderSession } from 'hooks/comms/contacts/useCreateContactBuilderSession';
+import { useContactBuilderSession } from 'hooks/comms/contacts/useContactBuilderSession';
+import { useContactPreview } from 'hooks/comms/contacts/useContactBuilderPreview';
 
 type Props = {
-  // data
   title: string;
   templateId?: string | null;
   selectedTemplateDetail?: CommTemplateDetail | null;
-
-  // state
   isTemplateDetailMissing?: boolean;
-  isPending?: boolean;
-
-  // callbacks
+  isPending?: boolean; // launch mutation pending
   onCancel: () => void;
   onConfirm: () => void;
+  tokenResponse: any;
 };
 
-// ✅ NEW: helper to format template recipients into readable lines
-function formatRecipients(template: CommTemplateDetail | null): string[] {
-  const r = template?.recipients;
-  if (!r) return [];
+type PreviewContact = {
+  id: number;
+  firstName?: string | null;
+  lastName?: string | null;
+  externalId?: string | null;
+  recordTypeName?: string | null;
+};
 
-  const lines: string[] = [];
+type ContactPreviewResponse = {
+  data: PreviewContact[];
+  pages?: {
+    currentPage: number;
+    pageSize: number;
+    totalPages: number;
+    totalCount: number;
+  };
+};
 
-  const pushList = (label: string, arr?: any[]) => {
-    if (!Array.isArray(arr) || arr.length === 0) return;
+const RecipientsPanelPreview: React.FC<Props> = ({ title, templateId, selectedTemplateDetail, isTemplateDetailMissing, isPending, onCancel, onConfirm, tokenResponse }) => {
+  const [pageNumber, setPageNumber] = useState(1);
+  const pageSize = 10;
 
-    for (const item of arr) {
-      if (!item) continue;
+  // 1) Create a contact builder session
+  const createSession = useCreateContactBuilderSession({
+    recipients: selectedTemplateDetail?.recipients ?? null,
+    tokenResponse,
+    autoStart: true,
+  });
 
-      if (item.type === 'Name') {
-        const parts = [item.firstName, item.middleInitial, item.lastName, item.suffix].filter(Boolean);
-        lines.push(`${label}: ${parts.join(' ')}`);
-        continue;
-      }
+  // 2) Safe destructure createSession
+  const { response: createResponse, isPending: isCreatePending, isSuccess: isCreateSuccess, isError: isCreateError, error: createError } = createSession;
+  const sessionId = createResponse?.sessionId ?? null;
 
-      if (item.type === 'Id' && item.id) {
-        lines.push(`${label}: ID ${item.id}`);
-        continue;
-      }
+  // 3) Poll session status (new hook shape: { status, isLoading, error })
+  const {
+    status: sessionStatus,
+    isLoading: isSessionLoading,
+    error: sessionError,
+  } = useContactBuilderSession({
+    sessionId,
+    tokenResponse,
+    enabled: Boolean(sessionId), // you may also use Boolean(sessionId) && isCreateSuccess
+    intervalMs: 1000,
+    maxPolls: 5,
+  });
 
-      if (item.type === 'ExternalId' && item.externalId) {
-        lines.push(`${label}: ExternalId ${item.externalId}`);
-        continue;
-      }
+  // Session ready when create succeeded and session is no longer PROCESSING.
+  const isProcessing = sessionStatus === 'PROCESSING';
+  const isSessionReadyForReads = Boolean(sessionId) && isCreateSuccess && !isSessionLoading && !isProcessing;
+  const effectiveSessionId = isSessionReadyForReads ? sessionId : null;
 
-      if (item.type === 'ResultSet' && item.id) {
-        lines.push(`${label}: ResultSet ${item.id}`);
-        continue;
-      }
-
-      // fallback
-      try {
-        lines.push(`${label}: ${JSON.stringify(item)}`);
-      } catch {
-        lines.push(`${label}: [unprintable item]`);
-      }
-    }
+  // 4) Fetch preview once session is ready
+  const {
+    data: preview,
+    isLoading: isLoadingPreview,
+    isError: isErrorPreview,
+    error: previewError,
+  } = useContactPreview({
+    sessionId: effectiveSessionId,
+    tokenResponse,
+    pageSize,
+    pageNumber,
+    sortBy: 'LASTNAME',
+    sortDirection: 'ASC',
+    enabled: Boolean(effectiveSessionId),
+  }) as {
+    data: ContactPreviewResponse | undefined;
+    isLoading: boolean;
+    isError: boolean;
+    error: unknown;
   };
 
-  pushList('Contact', r.contacts);
-  pushList('Group', r.groups);
-  pushList('Rule', r.rules);
-  pushList('Query', r.query);
-  pushList('PublicUser', r.publicUsers);
+  const previewRows = preview?.data ?? [];
+  const totalCount = typeof preview?.pages?.totalCount === 'number' ? preview.pages.totalCount : undefined;
+  const totalPages = typeof preview?.pages?.totalPages === 'number' ? preview.pages.totalPages : typeof totalCount === 'number' ? Math.max(1, Math.ceil(totalCount / pageSize)) : 1;
 
-  if (r.excluded?.contacts?.length) {
-    pushList('Excluded Contact', r.excluded.contacts);
-  }
+  // Derives error, CTA, etc.
+  const hasBlockingRecipientError = Boolean(isCreateError || sessionError || isErrorPreview);
 
-  return lines;
-}
+  const isRecipientsLoading =
+    !hasBlockingRecipientError &&
+    (isCreatePending ||
+      isSessionLoading ||
+      isProcessing ||
+      isLoadingPreview ||
+      // also cover the gap where session is created but not yet ready for reads
+      (Boolean(sessionId) && !isSessionReadyForReads));
 
-const RecipientsPreviewPanel: React.FC<Props> = ({ title, templateId, selectedTemplateDetail, isTemplateDetailMissing, isPending, onCancel, onConfirm }) => {
-  const recipients = useMemo(() => formatRecipients(selectedTemplateDetail), [selectedTemplateDetail]);
+  const primaryCtaLabel = hasBlockingRecipientError ? 'Launch anyway' : isPending ? 'Launching…' : 'Confirm & Launch';
+
+  const canPaginate = Boolean(effectiveSessionId) && !isLoadingPreview && !isErrorPreview && totalPages >= 2;
+  const canPrev = canPaginate && pageNumber > 1;
+  const canNext = canPaginate && pageNumber < totalPages;
+
+  const detailsErrorText = useMemo(() => {
+    if (!hasBlockingRecipientError) return null;
+
+    if (isCreateError && createError) return String(createError);
+    if (sessionError) return String(sessionError);
+    if (isErrorPreview && previewError) return String(previewError);
+
+    return 'Unable to load full recipient details.';
+  }, [hasBlockingRecipientError, isCreateError, createError, sessionError, isErrorPreview, previewError]);
 
   return (
     <div className="rounded-xl bg-amber-50 ring-1 ring-amber-200 p-4">
       <div className="font-semibold text-amber-900">Confirm launch</div>
 
       <div className="text-sm text-amber-900/80 mt-1">
-        You’re about to send <span className="font-medium">{title}</span>
-        {templateId ? (
-          <>
-            {' '}
-            using template <span className="font-medium">{selectedTemplateDetail?.name ?? selectedTemplateDetail?.id ?? templateId}</span>.
-          </>
-        ) : null}
+        You’re about to send <span className="font-medium">{title}</span>using template <span className="font-medium">{selectedTemplateDetail?.name ?? selectedTemplateDetail?.id ?? templateId}</span>.
       </div>
 
       <div className="mt-3">
-        <div className="mt-1 flex items-baseline gap-1 text-xs text-amber-900/70">
-          <span>This will go to</span>
-          <span className="font-extrabold">{recipients?.length ?? 0}</span>
-          <span>recipient{(recipients?.length ?? 0) === 1 ? '' : 's'}.</span>
-        </div>
+        {templateId && isTemplateDetailMissing ? <div className="text-xs text-amber-900/70 mt-2">No recipient details available (template detail not loaded).</div> : null}
 
+        {isRecipientsLoading ? <div className="mt-2 text-xs italic text-amber-900/70">Fetching recipient list… please wait as this can take some time to populate.</div> : null}
+
+        {hasBlockingRecipientError ? (
+          <div className="mt-2 text-xs text-red-600">
+            Unable to load full recipient details.
+            {detailsErrorText ? <div className="mt-1 font-mono break-all">{detailsErrorText}</div> : null}
+          </div>
+        ) : null}
+
+        {/* Count (from preview response) */}
+        {!isRecipientsLoading && typeof totalCount === 'number' ? (
+          <div className="mt-3 flex items-baseline gap-2 text-xs text-amber-900/80">
+            <div className="font-medium">Recipients</div>
+            <div>
+              Total: <span className="font-extrabold">{totalCount}</span>
+            </div>
+          </div>
+        ) : null}
+
+        {/* Preview + pagination */}
         <div className="mt-2">
-          {templateId && isTemplateDetailMissing ? (
-            <div className="text-xs text-amber-900/70 mt-1">No recipient details available (template detail not loaded).</div>
-          ) : !recipients || recipients.length === 0 ? (
-            <div className="text-xs text-amber-900/70 mt-1">No recipients found in this template detail.</div>
-          ) : (
-            <ul className="mt-2 list-disc pl-5 text-xs text-amber-900/90 max-h-48 overflow-auto">
-              {recipients.map((line, idx) => (
-                <li key={idx} className="font-mono">
-                  {line}
-                </li>
-              ))}
-            </ul>
-          )}
+          {effectiveSessionId && !isLoadingPreview && !isErrorPreview ? (
+            previewRows.length ? (
+              <div className="mt-2">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="text-xs text-amber-900/70">
+                    Showing page <span className="font-mono">{pageNumber}</span> of <span className="font-mono">{totalPages}</span>
+                    {typeof totalCount === 'number' ? (
+                      <>
+                        {' '}
+                        · <span className="font-mono">{totalCount}</span> total
+                      </>
+                    ) : null}
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <Button variant="secondary" onClick={() => setPageNumber((p) => Math.max(1, p - 1))} disabled={!canPrev || Boolean(isPending)}>
+                      Prev
+                    </Button>
+                    <Button variant="secondary" onClick={() => setPageNumber((p) => Math.min(totalPages, p + 1))} disabled={!canNext || Boolean(isPending)}>
+                      Next
+                    </Button>
+                  </div>
+                </div>
+
+                <ul className="mt-2 divide-y divide-amber-200/60 rounded-lg bg-white/60 ring-1 ring-amber-200/50 max-h-56 overflow-auto">
+                  {previewRows.map((c) => {
+                    const name = [c.lastName, c.firstName].filter(Boolean).join(', ') || '(no name)';
+                    const ext = c.externalId ? ` · ${c.externalId}` : '';
+                    const type = c.recordTypeName ? ` · ${c.recordTypeName}` : '';
+                    return (
+                      <li key={c.id} className="px-3 py-2">
+                        <div className="text-xs text-amber-950 font-mono">
+                          {name}
+                          {ext}
+                          {type}
+                        </div>
+                        <div className="text-[11px] text-amber-900/70 font-mono">ID {c.id}</div>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            ) : (
+              <div className="text-xs text-amber-900/70">No preview recipients returned.</div>
+            )
+          ) : null}
         </div>
       </div>
 
@@ -120,11 +207,11 @@ const RecipientsPreviewPanel: React.FC<Props> = ({ title, templateId, selectedTe
         </Button>
 
         <Button onClick={onConfirm} disabled={Boolean(isPending) || !title}>
-          {isPending ? 'Launching…' : 'Confirm & Launch'}
+          {primaryCtaLabel}
         </Button>
       </div>
     </div>
   );
 };
 
-export default RecipientsPreviewPanel;
+export default RecipientsPanelPreview;

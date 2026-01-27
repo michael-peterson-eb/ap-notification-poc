@@ -1,23 +1,20 @@
 import { useMemo, useState, useEffect, useRef } from 'react';
 import type { ColumnDef } from '@tanstack/react-table';
 
-import { Button } from '../../../../components/ui/button';
+import { Button } from 'components/ui/button';
 import { Field, Section } from '../../components';
-import { DataTable } from '../../../../components/DataTable';
-import { useLaunchComm } from '../../../../hooks/comms/launch/useLaunchComm';
-import { useCommTemplates } from 'hooks/comms/list/useCommTemplates';
-import { useCommEventTypes } from 'hooks/comms/list/useCommEventTypes';
+import { DataTable } from 'components/DataTable';
+import { useLaunchComm } from 'hooks/comms/launch/useLaunchComm';
+import { useCommTemplates, useCommEventTypes, useCommTemplateById, useCommsList } from 'hooks/comms/list';
 import { params } from 'utils/consts';
 import { useEverbridgeToken } from 'hooks/useEverbridgeToken';
 import { Select } from '../../components/Select';
 import { useStopComm } from 'hooks/comms/launch/useStopComm';
 import { CommDetailView } from './CommsDetailView';
-import { useCommTemplateById } from 'hooks/comms/list/useCommTemplatesByIds';
 import VariableFields from './VariableFields/VariableFields';
 import RecipientsPreviewPanel from './RecipientsPreviewPanel';
 import getCommColumns from './commColumns';
-import { useCommsList } from 'hooks/comms/list/useCommsList';
-import type { Comm } from '../../../../hooks/comms/list/useComms';
+import type { Comm } from 'hooks/comms/list/useComms';
 import CommsPager from './CommsPager';
 import { ValidationResult } from './VariableFields/types';
 import { useValidPermissions } from 'hooks/useValidPermissions';
@@ -246,6 +243,7 @@ const CommsTab = () => {
                   setShowLaunchConfirm(false);
                   handleLaunch(true);
                 }}
+                tokenResponse={tokenResponse}
               />
             ) : null}
 
