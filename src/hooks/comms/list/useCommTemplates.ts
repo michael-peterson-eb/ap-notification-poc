@@ -102,9 +102,9 @@ async function fetchCommTemplatesByIds(idToken: string, csv: string) {
   return rows.map(normalizeTemplate);
 }
 
-export function useCommTemplates(filters?: Record<string, any>, opts?: { enabled?: boolean; token: any; planType?: string }) {
+export function useCommTemplates(filters?: Record<string, any>, opts?: { enabled?: boolean; token: any; planType?: string; standaloneMode?: boolean }) {
   const baseEnabled = (opts?.enabled ?? true) && !!opts?.token?.data?.id_token;
-  const isDev = process.env.NODE_ENV === 'development';
+  const isDev = process.env.NODE_ENV === 'development' || opts?.standaloneMode === true;
   const idToken = opts?.token?.data?.id_token as string | undefined;
 
   const hasPlanType = !!opts?.planType;

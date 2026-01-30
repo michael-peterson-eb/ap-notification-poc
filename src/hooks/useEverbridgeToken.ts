@@ -5,15 +5,6 @@ async function fetchEverbridgeToken() {
   const isDev = process.env.NODE_ENV !== 'production';
 
   if (isDev) {
-    // Previously set for EB Suite
-    // encodedParams.set('grant_type', 'client_credentials');
-    // encodedParams.set('client_id', process.env.REACT_APP_EVERBRIDGE_CLIENT_ID);
-    // encodedParams.set('client_secret', process.env.REACT_APP_EVERBRIDGE_CLIENT_SECRET);
-    // encodedParams.set('username', process.env.REACT_APP_EVERBRIDGE_USERNAME);
-    // encodedParams.set('password', process.env.REACT_APP_EVERBRIDGE_PASSWORD);
-    // encodedParams.set('scope', '');
-
-    // Used for comms
     encodedParams.set('grant_type', 'password');
     encodedParams.set('client_id', process.env.REACT_APP_EVERBRIDGE_CLIENT_ID);
     encodedParams.set('client_secret', process.env.REACT_APP_EVERBRIDGE_CLIENT_SECRET);
@@ -22,26 +13,14 @@ async function fetchEverbridgeToken() {
     encodedParams.set('roleId', process.env.REACT_APP_EVERBRIDGE_ROLE_ID);
     encodedParams.set('scope', 'openid user-profile role');
   } else {
-    type SettingsRow = [
-      string, // eb_client_id
-      string, // eb_client_secret
-      string, // eb_username
-      string, // eb_user_password
-      string, // eb_role_id
-    ];
+    const rows = await new Promise((resolve, reject) => {
+      const queryStr = `SELECT eb_client_id, eb_client_secret, eb_username, eb_user_password, eb_role_id FROM $SETTINGS`;
 
-    //@ts-expect-error _RB is attached to window
-    const rows = (await (_RB as any).selectQuery(['eb_client_id', 'eb_client_secret', 'eb_username', 'eb_user_password', 'eb_role_id'], '$SETTINGS', '')) as SettingsRow[];
+      //@ts-expect-error rbf is attached to window
+      rbf_selectQuery(queryStr, 1, resolve, true);
+    });
 
     const [clientId, clientSecret, username, password, roleId] = rows[0];
-
-    // Previously set for EB Suite
-    // encodedParams.set('grant_type', 'client_credentials');
-    // encodedParams.set('client_id', clientId);
-    // encodedParams.set('client_secret', clientSecret);
-    // encodedParams.set('username', username);
-    // encodedParams.set('password', password);
-    // encodedParams.set('scope', '');
 
     encodedParams.set('grant_type', 'password');
     encodedParams.set('client_id', clientId);

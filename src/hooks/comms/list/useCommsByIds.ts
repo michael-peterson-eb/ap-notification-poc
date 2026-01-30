@@ -147,6 +147,19 @@ export function useCommsByIds(commIds: Array<string | number>, opts?: { enabled?
   // Find first error (if any)
   const firstError = opts?.token.error ?? queries.find((q) => q.error)?.error ?? null;
 
+  const refetch = async () => {
+    const promises = queries.map((q) => {
+      try {
+        // q.refetch may be undefined if query is disabled or not mounted yet,
+        // guard defensively and return a resolved Promise
+        return typeof (q as any).refetch === 'function' ? (q as any).refetch() : Promise.resolve(null);
+      } catch (err) {
+        return Promise.reject(err);
+      }
+    });
+    return Promise.all(promises);
+  };
+
   return {
     queries,
     ids,
@@ -160,5 +173,6 @@ export function useCommsByIds(commIds: Array<string | number>, opts?: { enabled?
 
     requestedCount: ids.length,
     loadedCount: rows.length,
+    refetch,
   };
 }

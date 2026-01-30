@@ -15,11 +15,6 @@ export default function getCommColumns(args: { onSelect: (comm: Comm) => void; s
 
   const columns: ColumnDef<Comm>[] = [
     {
-      accessorKey: 'id',
-      header: 'Comm ID',
-      cell: ({ getValue }) => <span className="font-mono text-xs">{String(getValue() ?? '')}</span>,
-    },
-    {
       accessorKey: 'title',
       header: 'Title',
       cell: ({ row }) => {

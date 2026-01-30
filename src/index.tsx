@@ -3,6 +3,7 @@ import App from './App';
 import './index.css';
 import { injectStyles } from './injectStyles';
 import { hasAnyNotificationsPermission } from 'utils/permissions';
+import { params } from 'utils/consts';
 
 declare global {
   interface Window {
@@ -11,15 +12,21 @@ declare global {
 }
 
 const isDev = process.env.NODE_ENV === 'development';
+const isStandalone = !!params.standaloneMode;
 
-function ensureReactMountNode() {
-  // DEV: use root if present so you can just run the app normally
-  if (isDev) {
-    const devRoot = document.getElementById('root');
-    if (devRoot) return devRoot;
+function ensureReactMountNode(): HTMLElement {
+  // Standalone: mount into predefined element
+  if (isStandalone) {
+    const viewRoot = document.getElementById('root-element');
+    if (viewRoot) return viewRoot;
+
+    const el = document.createElement('div');
+    el.id = 'root-element';
+    document.body.appendChild(el);
+    return el;
   }
 
-  // PROD (and fallback): always mount into our own node appended to body
+  // Host mode: mount into our own node appended to body
   const existing = document.getElementById('eb-notifications-root');
   if (existing) return existing;
 
@@ -39,6 +46,7 @@ function injectHeaderNotificationsButton() {
 
     // prevent duplicates
     const existing = toolbar.querySelector(`a[${BTN_ATTR}="1"]`) as HTMLAnchorElement | null;
+
     if (existing) {
       existing.style.display = 'inline-block';
       existing.style.visibility = 'visible';
@@ -73,12 +81,14 @@ function injectHeaderNotificationsButton() {
     );
 
     const edit = toolbar.querySelector('a.rbs-marker-button-edit') as HTMLAnchorElement | null;
+
     if (edit && edit.parentElement === toolbar) {
       toolbar.insertBefore(a, edit);
       return true;
     }
 
     const firstAction = toolbar.querySelector('a.marker-pageToolbar-action') as HTMLAnchorElement | null;
+
     if (firstAction && firstAction.parentElement === toolbar) {
       toolbar.insertBefore(a, firstAction);
       return true;
@@ -91,17 +101,24 @@ function injectHeaderNotificationsButton() {
   if (tryInject()) return;
 
   const obs = new MutationObserver(() => tryInject());
-  obs.observe(document.documentElement, { childList: true, subtree: true });
+  obs.observe(document.documentElement, {
+    childList: true,
+    subtree: true,
+  });
 }
 
+// Host-only concerns
 if (!isDev) {
-  // host-only concerns
   injectStyles();
-  if (hasAnyNotificationsPermission()) {
+  if (!isStandalone && hasAnyNotificationsPermission()) {
     injectHeaderNotificationsButton();
   }
 }
 
 const mountNode = ensureReactMountNode();
 const root = ReactDOM.createRoot(mountNode);
-root.render(<App isDev={isDev} />);
+
+// Render behavior:
+// - Standalone: render Notifications directly
+// - Host: render App (modal-based flow)
+root.render(<App isDev={isDev} isStandalone={isStandalone} />);

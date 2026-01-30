@@ -22,10 +22,10 @@ function extractFirstColumnValues(rows: any): string[] {
     .filter(Boolean);
 }
 
-export function usePlanCommIds(planId?: string) {
+export function usePlanCommIds(planId?: string, enabled: boolean = true) {
   const query = useQuery({
     queryKey: ['planCommIds', planId],
-    enabled: !!planId,
+    enabled: !!planId && enabled,
     retry: 0,
     queryFn: async () => {
       const rb = getRB();

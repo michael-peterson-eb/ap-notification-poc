@@ -1,11 +1,19 @@
 type Params = {
+  standaloneMode: boolean;
   id: string;
   planType: string;
   variableSelections: { label: string; value: string }[];
+  userDetails: {
+    CURR_USER_ROLE_ID: number;
+    CURR_USER_ROLE_CODE: string;
+  };
+  listUsers: string[];
+  launchUsers: string[];
 };
 
 // Mock params for development
 export const mockParams: Params = {
+  standaloneMode: false,
   id: '480121753', // plan id in new feature tenant
   planType: 'Crisis Management',
   variableSelections: [
@@ -14,6 +22,12 @@ export const mockParams: Params = {
     { label: 'Editors', value: 'Mock User1, Mock User2' },
     { label: 'Workflow Status', value: 'Created' },
   ],
+  userDetails: {
+    CURR_USER_ROLE_ID: 90,
+    CURR_USER_ROLE_CODE: 'administrator',
+  },
+  listUsers: ['administrator', 'ea_businessadmin', 'ea_itadmin', 'ea_subadmin', 'ea_admin', 'ea_bcplaneditor', 'ea_itplaneditor', 'ea_businessuser', 'ea_ituser'],
+  launchUsers: ['administrator', 'ea_businessadmin', 'ea_itadmin', 'ea_subadmin', 'ea_admin', 'ea_bcplaneditor', 'ea_itplaneditor'],
 };
 
 function getParamsFromDom(): Params | null {
@@ -37,6 +51,7 @@ export const params: Params = (() => {
   }
 
   const domParams = getParamsFromDom();
+
   if (!domParams) {
     throw new Error('Missing rjs-params data-record attribute');
   }

@@ -2,28 +2,31 @@ import { useMemo, useState } from 'react';
 import { useComms } from 'hooks/comms/list/useComms';
 import { usePlanCommIds } from 'hooks/comms/list/usePlanCommIds';
 import { useCommsByIds } from 'hooks/comms/list/useCommsByIds';
+import { params } from 'utils/consts';
 
-// This hook provides a unified interface to fetch comms lists. In dev mode, it uses a simple list query.
+// This hook provides a unified interface to fetch comms lists. In dev or standalone mode, it uses a simple list query.
 // In prod mode, it fetches comm ids for the specified plan and then fetches comms by those ids, paginated.
 // This is necessary because in prod, comms must be fetched by id for plan association, while in dev we can use simpler queries.
+// Standalone mode is used for BCIC legacy tenants, and does not run plan-based filtering, so it runs the same way dev does.
 
 type UseCommsListArgs = {
   token: any;
   planId: string | number;
   pageSize?: number;
-  enabled?: boolean;
-  overrideIsDev?: boolean;
 };
 
-export function useCommsList({ token, planId, pageSize = 10, enabled = true, overrideIsDev }: UseCommsListArgs) {
+export function useCommsList({ token, planId, pageSize = 10 }: UseCommsListArgs) {
   const planIdStr = String(planId);
 
-  const isDev = overrideIsDev ?? process.env.NODE_ENV === 'development';
-  const commsDev = useComms({}, { enabled: enabled && isDev && !!token?.data?.id_token, token });
+  const isDev = process.env.NODE_ENV === 'development';
+  const isStandalone = params.standaloneMode;
+  const showListView = isDev || isStandalone;
+
+  const commsList = useComms({}, { enabled: (isDev || isStandalone) && !!token?.data?.id_token, token });
 
   // Prod paginiation and query. First get the ids of the comms for this plan.
   // This gives us total count and ids to page through. This is stored in a BCIC field on the plan object.
-  const bcicPlanCommIds = usePlanCommIds(planIdStr);
+  const bcicPlanCommIds = usePlanCommIds(planIdStr, !showListView);
 
   const [page, setPage] = useState(1);
 
@@ -36,73 +39,71 @@ export function useCommsList({ token, planId, pageSize = 10, enabled = true, ove
   }, [bcicPlanCommIds.ids, page, pageSize]);
 
   // Get the comms for the current page of ids
-  const commsProd = useCommsByIds(pageIds, {
-    enabled: enabled && !isDev && pageIds.length > 0 && !!token?.data?.id_token,
+  const commsListedById = useCommsByIds(pageIds, {
+    enabled: !showListView && pageIds.length > 0 && !!token?.data?.id_token,
     token,
   });
 
   // Unified fields returned to caller
-  if (isDev) {
-    const rows = commsDev.rows ?? [];
+  if (showListView) {
+    const rows = commsList.rows ?? [];
     const unified: any = {
       rows,
-      totalCount: commsDev.totalCount ?? rows.length,
-      isLoading: Boolean(commsDev.isLoading),
-      isFetching: Boolean(commsDev.isFetching),
-      error: commsDev.error ?? null,
+      totalCount: commsList.totalCount ?? rows.length,
+      isLoading: Boolean(commsList.isLoading),
+      isFetching: Boolean(commsList.isFetching),
+      error: commsList.error ?? null,
       // dev pagination helpers if provided by useComms
-      pageNumber: (commsDev as any).pageNumber ?? undefined,
-      totalPages: (commsDev as any).totalPages ?? undefined,
-      prevPage: (commsDev as any).prevPage ?? undefined,
-      nextPage: (commsDev as any).nextPage ?? undefined,
+      pageNumber: (commsList as any).pageNumber ?? undefined,
+      totalPages: (commsList as any).totalPages ?? undefined,
+      prevPage: (commsList as any).prevPage ?? undefined,
+      nextPage: (commsList as any).nextPage ?? undefined,
       // unified refetch for callers
       async refetch() {
-        if (commsDev?.query?.refetch) return commsDev.query.refetch();
+        if (commsList?.query?.refetch) return commsList.query.refetch();
         return;
       },
     };
 
     return {
       comms: unified,
-      page,
+      page: (commsList as any).pageNumber,
+      totalPages: (commsList as any).totalPages,
       setPage,
       pageSize,
       pageIds,
       totalIds,
-      totalPages,
-      isDev: true,
     };
   }
 
   // Prod unified shape
-  const rows = commsProd.rows ?? [];
-  const unifiedProd: any = {
+  const rows = commsListedById.rows ?? [];
+  const unifiedListByIds: any = {
     rows,
-    totalCount: commsProd.loadedCount ?? rows.length,
-    isLoading: Boolean(bcicPlanCommIds.isLoading || commsProd.isLoading),
-    isFetching: Boolean(bcicPlanCommIds.isFetching || commsProd.isFetching),
-    error: bcicPlanCommIds.error ?? commsProd.error ?? null,
+    totalCount: commsListedById.loadedCount ?? rows.length,
+    isLoading: Boolean(bcicPlanCommIds.isLoading || commsListedById.isLoading),
+    isFetching: Boolean(bcicPlanCommIds.isFetching || commsListedById.isFetching),
+    error: bcicPlanCommIds.error ?? commsListedById.error ?? null,
     // no dev pagination helpers (undefined)
     refetch: async () => {
       if (bcicPlanCommIds?.query?.refetch) {
         await bcicPlanCommIds.query.refetch();
       }
-      if (Array.isArray((commsProd as any)?.queries)) {
-        await Promise.all((commsProd as any).queries.map((q: any) => q.refetch?.()));
-      } else if ((commsProd as any)?.query?.refetch) {
-        await (commsProd as any).query.refetch();
+      if (Array.isArray((commsListedById as any)?.queries)) {
+        await Promise.all((commsListedById as any).queries.map((q: any) => q.refetch?.()));
+      } else if ((commsListedById as any)?.query?.refetch) {
+        await (commsListedById as any).query.refetch();
       }
     },
   };
 
   return {
-    comms: unifiedProd,
+    comms: unifiedListByIds,
     page,
     setPage,
     pageSize,
     pageIds,
     totalIds,
     totalPages,
-    isDev: false,
   };
 }

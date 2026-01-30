@@ -18,30 +18,30 @@ import type { Comm } from 'hooks/comms/list/useComms';
 import CommsPager from './CommsPager';
 import { ValidationResult } from './VariableFields/types';
 import { useValidPermissions } from 'hooks/useValidPermissions';
+import { useToasts } from 'hooks/useToasts';
 
 type Mode = 'LIVE' | 'SIMULATION' | 'PREVIEW';
 
 const CommsTab = () => {
-  const tokenResponse = useEverbridgeToken();
-  const commsTemplates = useCommTemplates({}, { token: tokenResponse, planType: params.planType });
-  const commEventTypes = useCommEventTypes({ token: tokenResponse });
-  const permissions = useValidPermissions();
+  const isDev = process.env.NODE_ENV === 'development';
+  const isStandalone = params.standaloneMode;
+  const showListView = isDev || isStandalone;
 
-  const { comms, page, setPage, totalIds, totalPages, isDev } = useCommsList({ token: tokenResponse, planId: params.id, pageSize: 10, enabled: true });
+  const { pushToast } = useToasts();
+
+  const tokenResponse = useEverbridgeToken();
+  const commsTemplates = useCommTemplates({}, { token: tokenResponse, planType: params.planType, standaloneMode: params.standaloneMode });
+  const commEventTypes = useCommEventTypes({ token: tokenResponse });
+  const { permissions } = useValidPermissions();
+
+  const { comms, page, setPage, totalIds, totalPages } = useCommsList({ token: tokenResponse, planId: params.id, pageSize: 10 });
   const { error: commsError, isFetching: commsFetching, refetch: commsRefetch, rows: commsRows, totalCount: commsTotalCount } = comms;
 
-  const onRefreshComms = async () => {
-    try {
-      setIsManualRefreshing(true);
-      if (commsRefetch) await commsRefetch();
-    } finally {
-      setIsManualRefreshing(false);
-    }
-  };
-
+  // ---- Launch / stop hooks
   const launchComm = useLaunchComm(tokenResponse);
   const stopComm = useStopComm(tokenResponse);
 
+  // ---- Columns
   const commColumns = useMemo<ColumnDef<Comm>[]>(() => {
     return getCommColumns({
       onSelect: (comm) => setSelected({ id: comm.id, row: comm }),
@@ -50,6 +50,7 @@ const CommsTab = () => {
     });
   }, [stopComm, permissions]);
 
+  // ---- local UI state
   const [isManualRefreshing, setIsManualRefreshing] = useState(false);
   const [selected, setSelected] = useState<{ id: string; row?: Comm | null } | null>(null);
 
@@ -57,7 +58,7 @@ const CommsTab = () => {
   const [mode, setMode] = useState<Mode>('LIVE');
   const [eventType, setEventType] = useState('General');
   const [templateId, setTemplateId] = useState<string>('');
-  const [description, setDescription] = useState(`Description ${new Date().toLocaleString()}`);
+  const [description, setDescription] = useState('');
 
   const [variableValidationMessages, setVariableValidationMessages] = useState<string[] | null>(null);
   const variableFieldsRef = useRef<{ validate: () => Promise<ValidationResult> } | null>(null);
@@ -71,12 +72,6 @@ const CommsTab = () => {
   });
   const { template: templateDetail } = templateDetailQuery;
   const templateVars = templateDetail?.variables ?? [];
-
-  // Reset variable-related launch state when template changes
-  useEffect(() => {
-    setVariableValidationMessages(null);
-    setShowLaunchConfirm(false);
-  }, [templateId]);
 
   function buildLaunchBody(contextVariables?: Array<{ variableId: string; value: string | string[] }>) {
     const body: any = {
@@ -100,7 +95,6 @@ const CommsTab = () => {
     if (templateDetailQuery.isFetching) return;
 
     if (confirm) {
-      // Confirm click: launch using latest vars from VariableFields (no extra state)
       const result = await variableFieldsRef.current?.validate?.();
       if (!result?.ok) {
         setShowLaunchConfirm(false);
@@ -114,7 +108,6 @@ const CommsTab = () => {
       return;
     }
 
-    // First click: validate, then show confirm
     setVariableValidationMessages(null);
 
     const result = await variableFieldsRef.current?.validate?.();
@@ -127,19 +120,55 @@ const CommsTab = () => {
     setShowLaunchConfirm(true);
   }
 
+  const onRefreshComms = async () => {
+    try {
+      setIsManualRefreshing(true);
+      if (commsRefetch) await commsRefetch();
+    } finally {
+      setIsManualRefreshing(false);
+    }
+  };
+
+  // Reset variable-related launch state when template changes
+  useEffect(() => {
+    setVariableValidationMessages(null);
+    setShowLaunchConfirm(false);
+  }, [templateId]);
+
+  // Toasts
+  useEffect(() => {
+    if (launchComm.isSuccess && launchComm.data) {
+      setTitle('');
+      setDescription('');
+      setTemplateId('');
+
+      pushToast({ type: 'success', title: 'Launch succeeded', message: 'Communication launched successfully.' });
+      commsRefetch?.();
+    }
+  }, [launchComm.isSuccess, launchComm.data]);
+
+  useEffect(() => {
+    if (launchComm.isError) {
+      let msg = 'Launch failed.';
+      try {
+        const err = launchComm.error as any;
+        if (err?.message) msg = err.message;
+        else if (err?.toString) msg = String(err);
+      } catch {}
+      pushToast({ type: 'error', title: 'Launch failed', message: msg });
+    }
+  }, [launchComm.isError, launchComm.error]);
+
   if (selected) {
-    const useFullRow = !isDev;
     const isStopped = selected.row?.notificationStatus?.toLowerCase() === 'stopped' || selected.row?.notificationStatus === 'completed';
 
     return (
       <CommDetailView
         commId={selected.id}
         token={tokenResponse}
-        useFullRow={useFullRow}
-        fullRow={selected.row}
         onBack={() => setSelected(null)}
         right={
-          permissions.includes('bc.comms.launch') && (
+          permissions?.includes('bc.comms.launch') && (
             <Button variant="destructive" size="sm" disabled={stopComm.isPending || isStopped} onClick={() => stopComm.mutate({ commId: selected.id })}>
               Stop
             </Button>
@@ -153,7 +182,7 @@ const CommsTab = () => {
     <>
       {commsError ? <pre className="text-red-700 bg-red-50 ring-1 ring-red-200 p-3 rounded-xl overflow-auto text-xs">{JSON.stringify(commsError, null, 2)}</pre> : null}
 
-      {permissions.includes('bc.comms.launch') && (
+      {permissions?.includes('bc.comms.launch') && (
         <Section title="Launch Communication" tone="blue" description="Fill out the fields below." right={launchComm.isPending ? <div className="text-xs text-emerald-700">Launching…</div> : null}>
           <div className="flex flex-col gap-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -162,7 +191,7 @@ const CommsTab = () => {
                   className="w-full rounded-xl bg-white ring-1 ring-zinc-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300 disabled:bg-zinc-50 disabled:text-zinc-500"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  placeholder="e.g., Earthquake - Galesburg, Michigan"
+                  placeholder="e.g., Event - Location"
                   disabled={isLocked}
                 />
               </Field>
@@ -263,25 +292,11 @@ const CommsTab = () => {
                 {templateDetailQuery.isFetching ? 'Loading template…' : 'Launch'}
               </Button>
             </div>
-
-            {launchComm.isSuccess && launchComm.data ? (
-              <div className="rounded-xl bg-emerald-50 ring-1 ring-emerald-200 p-3">
-                <div className="text-sm font-medium text-emerald-800">Launch succeeded</div>
-                <pre className="mt-2 overflow-auto rounded-lg p-2 text-xs text-emerald-900">{JSON.stringify(launchComm.data, null, 2)}</pre>
-              </div>
-            ) : null}
-
-            {launchComm.isError ? (
-              <div className="rounded-xl bg-red-50 ring-1 ring-red-200 p-3">
-                <div className="text-sm font-medium text-red-800">Launch failed</div>
-                <pre className="mt-2 overflow-auto rounded-lg p-2 text-xs text-red-900">{JSON.stringify(launchComm.error, null, 2)}</pre>
-              </div>
-            ) : null}
           </div>
         </Section>
       )}
 
-      {permissions.includes('bc.comms.list') && (
+      {permissions?.includes('bc.comms.list') && (
         <Section
           title="Communications"
           description={`Total: ${commsTotalCount}`}
@@ -290,7 +305,7 @@ const CommsTab = () => {
           onRefresh={onRefreshComms}
           refreshing={isManualRefreshing}
           refreshDisabled={isManualRefreshing || commsFetching}>
-          <DataTable data={commsRows} columns={commColumns} emptyText={isDev ? 'No communications found.' : 'No communications found for this plan.'} />{' '}
+          <DataTable data={commsRows} columns={commColumns} emptyText={showListView ? 'No communications found.' : 'No communications found for this plan.'} />{' '}
         </Section>
       )}
     </>

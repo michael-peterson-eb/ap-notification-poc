@@ -67,7 +67,9 @@ export function RecipientsPanel({ commId, token, statuses = DEFAULT_STATUSES, de
     { token, enabled: !!commId }
   );
 
-  const pager = (
+  const { hasNextPage, hasPrevPage } = recipientLogs;
+
+  const pager = (hasNextPage || hasPrevPage) && (
     <div className="flex items-center gap-2">
       <Button variant="secondary" size="sm" disabled={!recipientLogs.hasPrevPage || recipientLogs.isFetching} onClick={() => setPageNumber((p) => Math.max(1, p - 1))}>
         Prev
@@ -167,7 +169,22 @@ export function RecipientsPanel({ commId, token, statuses = DEFAULT_STATUSES, de
           description={confirmation.data ? `Total: ${confirmation.data.totalCount}` : 'Confirmation counts by status.'}
           right={confirmation.isFetching ? <div className="text-xs text-zinc-500">Refreshing…</div> : null}>
           {confirmation.error ? (
-            <pre className="text-red-700 bg-red-50 ring-1 ring-red-200 p-3 rounded-xl overflow-auto text-xs">{JSON.stringify(confirmation.error, null, 2)}</pre>
+            (() => {
+              const err: any = confirmation.error;
+              const status = err?.status ?? err?.response?.status ?? err?.originalStatus;
+              const is404 = status === 404;
+
+              if (is404) {
+                return (
+                  <div className="bg-amber-50 ring-1 ring-amber-200 p-3 rounded-xl text-sm text-amber-900">
+                    <div className="font-medium">We couldn’t find confirmation data yet.</div>
+                    <div className="mt-1 text-amber-800">If you just created this communication, it can take a few seconds to become available. Please wait a moment and refresh.</div>
+                  </div>
+                );
+              }
+
+              return <pre className="text-red-700 bg-red-50 ring-1 ring-red-200 p-3 rounded-xl overflow-auto text-xs">{JSON.stringify(confirmation.error, null, 2)}</pre>;
+            })()
           ) : confirmation.isLoading ? (
             <div className="text-sm text-zinc-600">Loading confirmation status…</div>
           ) : (

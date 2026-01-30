@@ -1,5 +1,6 @@
 import React from 'react';
-import { Button } from '../../../../components/ui/button';
+import { Button } from 'components/ui/button';
+import { params } from 'utils/consts';
 
 type CommsObject = {
   pageNumber: number;
@@ -21,8 +22,10 @@ type Props = {
 
 const CommsPager: React.FC<Props> = ({ comms = null, page = 1, setPage, totalIds = 0, totalPages = 1 }) => {
   const isDev = process.env.NODE_ENV === 'development';
+  const isStandalone = params.standaloneMode;
+  const showListView = isDev || isStandalone;
 
-  if (isDev && comms) {
+  if (showListView && comms) {
     const { pageNumber, totalPages: devTotal, prevPage, nextPage } = comms;
     return (
       <div className="flex items-center gap-2">
