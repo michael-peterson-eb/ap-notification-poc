@@ -1,11 +1,13 @@
-import { useState } from 'react';
-import { Modal } from '../../components/Modal';
-import { Tabs } from './components';
-import { useOrgId } from 'hooks/useOrgId';
-import IncidentsTab from './Tabs/IncidentsTab';
+import React, { useRef, useState, useEffect } from 'react';
+import { Modal } from 'components/Modal';
 import CommsTab from './Tabs/Comms/CommsTab';
-import { params } from 'utils/consts';
-import { on } from 'events';
+import { useEverbridgeToken } from 'hooks/useEverbridgeToken';
+import { useToasts } from 'hooks/useToasts';
+import Settings from '../Settings';
+import { useEverbridgeSettingsRow } from 'hooks/useEverbridgeSettingsRow';
+import { Settings as SettingsIcon } from 'lucide-react';
+import clsx from 'clsx';
+import { useValidPermissions } from 'hooks/useValidPermissions';
 
 type Props = {
   open?: boolean;
@@ -25,10 +27,58 @@ export default function Notifications({ open, onOpenChange, isStandalone, isDev 
 }
 
 function NotificationsContent({ isDev }: { isDev?: boolean }) {
+  const { pushToast } = useToasts();
+  const { permissions } = useValidPermissions();
+  const settingsQuery = useEverbridgeSettingsRow({ enabled: !isDev });
+
+  const tokenQuery = useEverbridgeToken({
+    pushToast,
+    settingsRow: isDev ? null : settingsQuery.data,
+    settingsLoaded: isDev ? true : settingsQuery.isFetched,
+  });
+
+  const [page, setPage] = useState<'comms' | 'settings'>('comms');
+  const settingsButtonRef = useRef<HTMLButtonElement | null>(null);
+
+  // Return focus to settings button when closing settings
+  useEffect(() => {
+    if (page === 'comms') {
+      settingsButtonRef.current?.focus();
+    }
+  }, [page]);
+
   return (
-    <div className="w-full h-full">
-      <div className={`flex flex-col gap-3 ${isDev ? 'p-10' : ''}`}>
-        <CommsTab />
+    <div className={`relative w-full h-full ${isDev ? 'p-10' : ''}`}>
+      {/* Settings icon – top right, no header */}
+      {permissions?.includes('bc.comms.launch') && (
+        <div className="flex justify-end">
+          <button
+            ref={settingsButtonRef}
+            aria-haspopup="dialog"
+            aria-expanded={page === 'settings'}
+            title="Settings"
+            className="self-end top-2 right-2 z-10 p-2 rounded hover:bg-zinc-100 focus:outline-none"
+            onClick={() => setPage((p) => (p === 'settings' ? 'comms' : 'settings'))}>
+            <SettingsIcon size={18} />
+          </button>
+        </div>
+      )}
+
+      {/* Sliding viewport */}
+      <div className="relative w-full h-full overflow-hidden">
+        <div className={clsx('flex h-full w-[200%] transition-transform duration-300 ease-in-out', page === 'comms' ? 'translate-x-0' : '-translate-x-1/2')}>
+          <div className="w-1/2 flex flex-col">
+            <div className="flex-1 min-h-0 overflow-auto space-y-4">
+              <CommsTab tokenResponse={tokenQuery} permissions={permissions} />
+            </div>
+          </div>
+
+          <div className="w-1/2 flex flex-col">
+            <div className="flex-1 min-h-0 overflow-auto">
+              <Settings pushToast={pushToast} refresh={tokenQuery.refetch} onClose={() => setPage('comms')} />
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

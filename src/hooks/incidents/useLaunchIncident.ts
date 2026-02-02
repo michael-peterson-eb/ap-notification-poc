@@ -1,3 +1,4 @@
+//@ts-nocheck no longer used
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useEverbridgeToken } from '../useEverbridgeToken';
 

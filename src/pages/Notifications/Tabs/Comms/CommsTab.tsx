@@ -7,7 +7,6 @@ import { DataTable } from 'components/DataTable';
 import { useLaunchComm } from 'hooks/comms/launch/useLaunchComm';
 import { useCommTemplates, useCommEventTypes, useCommTemplateById, useCommsList } from 'hooks/comms/list';
 import { params } from 'utils/consts';
-import { useEverbridgeToken } from 'hooks/useEverbridgeToken';
 import { Select } from '../../components/Select';
 import { useStopComm } from 'hooks/comms/launch/useStopComm';
 import { CommDetailView } from './CommsDetailView';
@@ -22,17 +21,15 @@ import { useToasts } from 'hooks/useToasts';
 
 type Mode = 'LIVE' | 'SIMULATION' | 'PREVIEW';
 
-const CommsTab = () => {
+const CommsTab = ({ tokenResponse, permissions }) => {
   const isDev = process.env.NODE_ENV === 'development';
   const isStandalone = params.standaloneMode;
   const showListView = isDev || isStandalone;
 
   const { pushToast } = useToasts();
 
-  const tokenResponse = useEverbridgeToken();
   const commsTemplates = useCommTemplates({}, { token: tokenResponse, planType: params.planType, standaloneMode: params.standaloneMode });
   const commEventTypes = useCommEventTypes({ token: tokenResponse });
-  const { permissions } = useValidPermissions();
 
   const { comms, page, setPage, totalIds, totalPages } = useCommsList({ token: tokenResponse, planId: params.id, pageSize: 10 });
   const { error: commsError, isFetching: commsFetching, refetch: commsRefetch, rows: commsRows, totalCount: commsTotalCount } = comms;
