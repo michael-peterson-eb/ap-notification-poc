@@ -4,7 +4,6 @@ import CommsTab from './Tabs/Comms/CommsTab';
 import { useEverbridgeToken } from 'hooks/useEverbridgeToken';
 import { useToasts } from 'hooks/useToasts';
 import Settings from '../Settings';
-import { useEverbridgeSettingsRow } from 'hooks/useEverbridgeSettingsRow';
 import { Settings as SettingsIcon } from 'lucide-react';
 import clsx from 'clsx';
 import { useValidPermissions } from 'hooks/useValidPermissions';
@@ -29,12 +28,9 @@ export default function Notifications({ open, onOpenChange, isStandalone, isDev 
 function NotificationsContent({ isDev }: { isDev?: boolean }) {
   const { pushToast } = useToasts();
   const { permissions } = useValidPermissions();
-  const settingsQuery = useEverbridgeSettingsRow({ enabled: !isDev });
-
   const tokenQuery = useEverbridgeToken({
     pushToast,
-    settingsRow: isDev ? null : settingsQuery.data,
-    settingsLoaded: isDev ? true : settingsQuery.isFetched,
+    isDev,
   });
 
   const [page, setPage] = useState<'comms' | 'settings'>('comms');
@@ -46,6 +42,17 @@ function NotificationsContent({ isDev }: { isDev?: boolean }) {
       settingsButtonRef.current?.focus();
     }
   }, [page]);
+
+  useEffect(() => {
+    if (tokenQuery.isError) {
+      console.error('Error fetching Everbridge token:', tokenQuery.error);
+      pushToast({
+        title: 'Error verifying credentials with Everbridge',
+        message: 'Please verify your credentials in settings, and make sure you have established the necessary custom method in the platform (see documentation).',
+        type: 'error',
+      });
+    }
+  }, [tokenQuery.isError, tokenQuery.error]);
 
   return (
     <div className={`relative w-full h-full ${isDev ? 'p-10' : ''}`}>

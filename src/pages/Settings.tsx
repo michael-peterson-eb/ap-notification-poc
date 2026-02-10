@@ -110,7 +110,7 @@ export default function Settings({ pushToast, onClose, refresh }: Props) {
           <Input value={form.eb_client_id} onChange={(e) => updateField('eb_client_id', e.target.value)} placeholder="Client ID" />
         </Field>
 
-        <Field label="Client Secret" hint="Leave blank to keep the currently stored secret">
+        <Field label="Client Secret">
           <Input type="password" value={form.eb_client_secret} onChange={(e) => updateField('eb_client_secret', e.target.value)} placeholder="••••••••" autoComplete="new-password" />
         </Field>
 
@@ -118,7 +118,7 @@ export default function Settings({ pushToast, onClose, refresh }: Props) {
           <Input value={form.eb_username} onChange={(e) => updateField('eb_username', e.target.value)} placeholder="Username" autoComplete="username" />
         </Field>
 
-        <Field label="Password" hint="Leave blank to keep the currently stored password">
+        <Field label="Password">
           <Input type="password" value={form.eb_user_password} onChange={(e) => updateField('eb_user_password', e.target.value)} placeholder="••••••••" autoComplete="new-password" />
         </Field>
 

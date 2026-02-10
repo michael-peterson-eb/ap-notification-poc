@@ -16,7 +16,6 @@ import getCommColumns from './commColumns';
 import type { Comm } from 'hooks/comms/list/useComms';
 import CommsPager from './CommsPager';
 import { ValidationResult } from './VariableFields/types';
-import { useValidPermissions } from 'hooks/useValidPermissions';
 import { useToasts } from 'hooks/useToasts';
 
 type Mode = 'LIVE' | 'SIMULATION' | 'PREVIEW';
@@ -177,8 +176,6 @@ const CommsTab = ({ tokenResponse, permissions }) => {
 
   return (
     <>
-      {commsError ? <pre className="text-red-700 bg-red-50 ring-1 ring-red-200 p-3 rounded-xl overflow-auto text-xs">{JSON.stringify(commsError, null, 2)}</pre> : null}
-
       {permissions?.includes('bc.comms.launch') && (
         <Section title="Launch Communication" tone="blue" description="Fill out the fields below." right={launchComm.isPending ? <div className="text-xs text-emerald-700">Launching…</div> : null}>
           <div className="flex flex-col gap-6">
