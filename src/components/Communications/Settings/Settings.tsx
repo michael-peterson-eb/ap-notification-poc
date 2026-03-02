@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import type { Toast } from 'hooks/useToasts';
 import { Button } from 'components/ui/button';
 import { Input } from 'components/ui/input';
-import { Field } from 'pages/Notifications/components';
+import { Field } from 'components';
 import { useEverbridgeSettingsRow } from 'hooks/useEverbridgeSettingsRow';
 import { useQueryClient } from '@tanstack/react-query';
 

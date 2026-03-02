@@ -1,16 +1,13 @@
 import { useMemo, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useInfiniteQuery } from '@tanstack/react-query';
 
 export type Comm = {
   id: string;
   title?: string;
   eventType?: string;
   status?: string;
-
   createdDate?: number;
   lastModifiedDate?: number;
-
-  // any other fields
   [k: string]: any;
 };
 
@@ -36,32 +33,22 @@ function toMillis(iso?: string) {
 
 function normalizeComm(raw: any): Comm {
   return {
-    // map API commId -> id (table expects id)
     id: raw.commId ?? raw.id,
-
-    // keep common fields
     title: raw.title ?? raw.name,
     eventType: raw.eventType,
     status: raw.status,
-
-    // map created/update -> createdDate/lastModifiedDate (ms)
     createdDate: toMillis(raw.created),
-    lastModifiedDate: toMillis(raw.update),
-
-    // preserve everything else in case you need it
+    lastModifiedDate: toMillis(raw.update ?? raw.updated),
     ...raw,
   };
 }
 
-async function fetchCommsPage(params: { pageNumber: number; idToken: string; filters?: Record<string, any> }) {
-  const { pageNumber, idToken, filters } = params;
+async function fetchCommsPage(params: { pageNumber: number; pageSize: number; idToken: string; filters?: Record<string, any> }) {
+  const { pageNumber, pageSize, idToken, filters } = params;
 
   const qs = new URLSearchParams();
-
-  // If your API supports paging params, you can add them here.
-  // Your sample response shows pages.currentPage etc, so it likely does.
-  // If it doesn't, leaving these out still works; you'll just always get page 1.
   qs.set('pageNumber', String(pageNumber));
+  qs.set('pageSize', String(pageSize));
 
   if (filters) {
     for (const [k, v] of Object.entries(filters)) {
@@ -70,8 +57,7 @@ async function fetchCommsPage(params: { pageNumber: number; idToken: string; fil
     }
   }
 
-  // Avoid trailing `?` when qs is empty
-  const url = qs.toString() ? `${COMMS_BASE}?${qs.toString()}` : COMMS_BASE;
+  const url = `${COMMS_BASE}?${qs.toString()}`;
 
   const resp = await fetch(url, {
     method: 'GET',
@@ -94,7 +80,6 @@ async function fetchCommsPage(params: { pageNumber: number; idToken: string; fil
 
   if (!resp.ok) throw new Error(JSON.stringify({ status: resp.status, ...json }));
 
-  // Expect the shape you pasted: { data: [...], pages: {...} }
   const typed = json as CommsListResponse<any>;
 
   return {
@@ -103,50 +88,75 @@ async function fetchCommsPage(params: { pageNumber: number; idToken: string; fil
   } as CommsListResponse<Comm>;
 }
 
-export function useComms(filters?: Record<string, any>, opts?: { enabled?: boolean; token: any }) {
-  const [pageNumber, setPageNumber] = useState(1);
+export type UseCommsUnifiedResult = {
+  rows: Comm[];
+  totalCount: number;
+  loadedCount: number;
+  page: number;
+  totalPages: number;
+  pageSize: number;
+  hasMore: boolean;
+  loadMore: () => Promise<any> | void;
+  reset: () => void;
+  refetch: () => Promise<any>;
+  isLoading: boolean;
+  isFetching: boolean;
+  error: any;
+};
 
-  const query = useQuery({
-    queryKey: ['comms', pageNumber, filters],
-    enabled: (opts?.enabled ?? true) && !!opts.token.data?.id_token,
-    queryFn: () =>
+export function useComms(filters: Record<string, any> = {}, opts: { enabled?: boolean; token: any; pageSize?: number }): UseCommsUnifiedResult {
+  const pageSize = opts.pageSize ?? 10;
+  const enabled = (opts.enabled ?? true) && !!opts.token?.data?.id_token;
+
+  // Internal reset trigger — bumps query key so infinite query drops pages immediately
+  const [resetNonce, setResetNonce] = useState(0);
+
+  const filtersKey = JSON.stringify(filters ?? {});
+
+  const query = useInfiniteQuery({
+    queryKey: ['comms:list', filtersKey, pageSize, resetNonce],
+    enabled,
+    initialPageParam: 1,
+    queryFn: ({ pageParam }) =>
       fetchCommsPage({
-        pageNumber,
-        idToken: opts.token.data!.id_token,
+        pageNumber: Number(pageParam ?? 1),
+        pageSize,
+        idToken: opts.token.data.id_token,
         filters,
       }),
+    getNextPageParam: (lastPage) => {
+      const cur = lastPage?.pages?.currentPage ?? 1;
+      const total = lastPage?.pages?.totalPages ?? 1;
+      return cur < total ? cur + 1 : undefined;
+    },
     retry: 0,
   });
 
-  // ✅ Use the correct fields from the actual response
-  const rows = query.data?.data ?? [];
-  const pages = query.data?.pages;
+  const pages = useMemo(() => query.data?.pages ?? [], [query.data]);
+  const rows = useMemo(() => pages.flatMap((p) => p.data ?? []), [pages]);
 
-  const totalPages = pages?.totalPages ?? 1;
-  const totalCount = pages?.totalCount ?? 0;
-  const currentPage = pages?.currentPage ?? pageNumber;
+  const last = pages[pages.length - 1];
+  const totalPages = last?.pages?.totalPages ?? 1;
+  const page = last?.pages?.currentPage ?? 1;
+  const totalCount = last?.pages?.totalCount ?? 0;
 
-  const api = useMemo(
-    () => ({
-      pageNumber: currentPage,
-      setPageNumber: (n: number) => setPageNumber(Math.max(1, n)),
-      nextPage: () => setPageNumber((p) => Math.min(totalPages, p + 1)),
-      prevPage: () => setPageNumber((p) => Math.max(1, p - 1)),
-    }),
-    [currentPage, totalPages]
-  );
+  const hasMore = page < totalPages;
 
   return {
-    query,
+    rows,
+    totalCount,
+    loadedCount: rows.length,
+    page,
+    totalPages,
+    pageSize,
+    hasMore,
+    loadMore: () => (hasMore ? query.fetchNextPage() : undefined),
+    reset: () => setResetNonce((n) => n + 1),
+    refetch: async () => {
+      await query.refetch();
+    },
     isLoading: opts.token.isLoading || query.isLoading,
     isFetching: query.isFetching,
     error: opts.token.error ?? query.error ?? null,
-
-    rows,
-    pages,
-    totalPages,
-    totalCount,
-
-    ...api,
   };
 }

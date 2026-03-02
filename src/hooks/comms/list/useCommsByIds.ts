@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useQueries } from '@tanstack/react-query';
 
 export type Comm = {
@@ -8,15 +8,8 @@ export type Comm = {
   status?: string;
   createdDate?: number;
   lastModifiedDate?: number;
+  sent?: string;
   [k: string]: any;
-};
-
-export type CommFetchResult = {
-  commId: string;
-  url: string;
-  status: number;
-  raw: any;
-  normalized: Comm;
 };
 
 const COMMS_BASE = 'https://api.everbridge.net/managerapps/communications/v1/';
@@ -34,17 +27,17 @@ function normalizeComm(raw: any): Comm {
     eventType: raw.eventType,
     status: raw.status,
     createdDate: toMillis(raw.created),
-    lastModifiedDate: toMillis(raw.updated),
+    lastModifiedDate: toMillis(raw.update ?? raw.updated),
+    sent: raw.sent,
     ...raw,
   };
 }
 
 function cleanCommId(commId: string) {
-  // avoid accidental "/{id}" or whitespace
   return commId.trim().replace(/^\/+/, '');
 }
 
-async function fetchCommById(params: { idToken: string; commId: string }): Promise<CommFetchResult> {
+async function fetchCommById(params: { idToken: string; commId: string }) {
   const commId = cleanCommId(params.commId);
   const url = `${COMMS_BASE}${encodeURIComponent(commId)}`;
 
@@ -68,30 +61,39 @@ async function fetchCommById(params: { idToken: string; commId: string }): Promi
     : {};
 
   if (!resp.ok) {
-    throw new Error(
-      JSON.stringify({
-        commId,
-        url,
-        status: resp.status,
-        body,
-      })
-    );
+    throw new Error(JSON.stringify({ commId, url, status: resp.status, body }));
   }
 
-  const normalized = normalizeComm(body);
-
-  return {
-    commId,
-    url,
-    status: resp.status,
-    raw: body,
-    normalized,
-  };
+  return normalizeComm(body);
 }
 
-export function useCommsByIds(commIds: Array<string | number>, opts?: { enabled?: boolean; token?: any }) {
-  const idToken = opts?.token?.data?.id_token;
-  const enabled = (opts?.enabled ?? true) && !!idToken && commIds.length > 0;
+export type UseCommsByIdsUnifiedResult = {
+  rows: Comm[];
+  totalCount: number;
+  loadedCount: number;
+  page: number;
+  totalPages: number;
+  pageSize: number;
+  hasMore: boolean;
+  loadMore: () => void;
+  reset: () => void;
+  refetch: () => Promise<any>;
+  isLoading: boolean;
+  isFetching: boolean;
+  error: any;
+};
+
+type Options = {
+  enabled?: boolean;
+  token: any;
+  pageSize?: number;
+  resetKey?: string | number;
+};
+
+export function useCommsByIds(commIds: Array<string | number>, opts: Options): UseCommsByIdsUnifiedResult {
+  const pageSize = opts.pageSize ?? 10;
+  const idToken = opts.token?.data?.id_token;
+  const enabled = (opts.enabled ?? true) && !!idToken;
 
   const ids = useMemo(() => {
     return Array.from(
@@ -104,75 +106,68 @@ export function useCommsByIds(commIds: Array<string | number>, opts?: { enabled?
     );
   }, [commIds]);
 
+  const totalCount = ids.length;
+  const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
+
+  const [page, setPage] = useState(1);
+  const [resetNonce, setResetNonce] = useState(0);
+
+  useEffect(() => {
+    setPage(1);
+    setResetNonce((n) => n + 1);
+  }, [pageSize, opts.resetKey, totalCount]);
+
+  const visibleIds = useMemo(() => {
+    const end = Math.min(totalCount, page * pageSize);
+    return ids.slice(0, end);
+  }, [ids, page, pageSize, totalCount]);
+
   const queries = useQueries({
-    queries: ids.map((commId) => ({
-      queryKey: ['comm', commId],
-      enabled,
-      queryFn: () => fetchCommById({ idToken: idToken!, commId }),
+    queries: visibleIds.map((commId) => ({
+      queryKey: ['comms:byId', commId, resetNonce],
+      enabled: enabled && visibleIds.length > 0,
+      queryFn: () => fetchCommById({ idToken, commId }),
       retry: 0,
     })),
   });
 
-  // ✅ rows for your table (normalized), sorted by createdDate (newest first)
   const rows = useMemo(() => {
-    const list = queries.map((q) => (q.data ? q.data.normalized : null)).filter(Boolean) as Comm[];
+    const list = queries.map((q) => q.data).filter(Boolean) as Comm[];
 
-    // Newest → oldest. Put missing createdDate at the end.
+    // Sort newest->oldest by sent (preferred), else createdDate
     return list.sort((a, b) => {
-      const aT = a.createdDate ?? -Infinity;
-      const bT = b.createdDate ?? -Infinity;
+      const aT = toMillis(a.sent) ?? a.createdDate ?? -Infinity;
+      const bT = toMillis(b.sent) ?? b.createdDate ?? -Infinity;
       return bT - aT;
     });
   }, [queries]);
 
-  // ✅ raw debug info per id (success or error)
-  const results = useMemo(
-    () =>
-      ids.map((commId, i) => {
-        const q = queries[i];
-        return {
-          commId,
-          status: (q.data as any)?.status,
-          url: (q.data as any)?.url,
-          raw: (q.data as any)?.raw,
-          normalized: (q.data as any)?.normalized,
-          error: q.error ?? null,
-          isLoading: q.isLoading,
-          isFetching: q.isFetching,
-        };
-      }),
-    [ids, queries]
-  );
+  const loadedCount = rows.length;
+  const hasMore = page < totalPages;
 
-  // Find first error (if any)
-  const firstError = opts?.token.error ?? queries.find((q) => q.error)?.error ?? null;
+  const firstError = opts.token.error ?? queries.find((q) => q.error)?.error ?? null;
 
   const refetch = async () => {
-    const promises = queries.map((q) => {
-      try {
-        // q.refetch may be undefined if query is disabled or not mounted yet,
-        // guard defensively and return a resolved Promise
-        return typeof (q as any).refetch === 'function' ? (q as any).refetch() : Promise.resolve(null);
-      } catch (err) {
-        return Promise.reject(err);
-      }
-    });
-    return Promise.all(promises);
+    const ps = queries.map((q) => ((q as any).refetch ? (q as any).refetch() : Promise.resolve(null)));
+    return Promise.all(ps);
   };
 
   return {
-    queries,
-    ids,
-
-    rows, // table-ready
-    results, // raw per-id details
-
-    error: firstError,
-    isLoading: opts?.token.isLoading || queries.some((q) => q.isLoading),
-    isFetching: queries.some((q) => q.isFetching),
-
-    requestedCount: ids.length,
-    loadedCount: rows.length,
+    rows,
+    totalCount,
+    loadedCount,
+    page,
+    totalPages,
+    pageSize,
+    hasMore,
+    loadMore: () => setPage((p) => Math.min(totalPages, p + 1)),
+    reset: () => {
+      setPage(1);
+      setResetNonce((n) => n + 1);
+    },
     refetch,
+    isLoading: opts.token.isLoading || queries.some((q) => q.isLoading),
+    isFetching: queries.some((q) => q.isFetching),
+    error: firstError,
   };
 }

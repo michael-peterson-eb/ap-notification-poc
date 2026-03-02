@@ -10,7 +10,7 @@ export type CommTemplateDetail = {
   priority?: string;
   publicSafety?: boolean;
   category?: string;
-  eventType?: string;
+  eventTypes?: string;
   type?: string;
   created?: string;
   createdBy?: string;

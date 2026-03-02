@@ -27,7 +27,6 @@ function normalizeRoleCode(code: CurrentUser['CURR_USER_ROLE_CODE']): string {
 export async function getCurrentUser(): Promise<CurrentUser> {
   // Check params first
   if (params?.userDetails) {
-    console.log('Using userDetails from params:', params.userDetails);
     const { CURR_USER_ROLE_CODE, CURR_USER_ROLE_ID } = params.userDetails;
     
     return {
@@ -101,8 +100,6 @@ export async function getValidPermissions(opts?: { env?: string }): Promise<Perm
   }
 
   const user = await getCurrentUser();
-
-  console.log('USR', user);
 
   const roleId = Number(user.CURR_USER_ROLE_ID);
   const roleCode = normalizeRoleCode(user.CURR_USER_ROLE_CODE);

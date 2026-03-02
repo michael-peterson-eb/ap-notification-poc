@@ -1,0 +1,258 @@
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
+import { RotateCw } from 'lucide-react';
+
+type SelectProps = React.SelectHTMLAttributes<HTMLSelectElement> & {
+  isLoading?: boolean;
+  loadingText?: string;
+  className?: string;
+};
+
+function optionFromChild(child: any) {
+  if (!child) return null;
+  const { props } = child;
+  const value = props?.value ?? (typeof child === 'string' ? child : '');
+  const label = props?.children != null ? (typeof props.children === 'string' ? props.children : String(props.children)) : String(value);
+  const disabled = !!props?.disabled;
+  return { value: String(value), label, disabled };
+}
+
+export function Select({ children, isLoading, loadingText = 'Loading…', className = '', value, onChange, disabled, ...props }: SelectProps) {
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const buttonRef = useRef<HTMLButtonElement | null>(null);
+  const menuRef = useRef<HTMLDivElement | null>(null);
+
+  // build options array from children (expecting <option value="...">Label</option> usage)
+  const options = useMemo(() => {
+    const arr: Array<{ value: string; label: string; disabled?: boolean }> = [];
+    React.Children.forEach(children, (child) => {
+      const opt = optionFromChild(child);
+      if (opt) arr.push(opt);
+    });
+    return arr;
+  }, [children]);
+
+  const selectedValue = String(value ?? '');
+  // find selected label or placeholder (option with empty value)
+  const selectedOption = options.find((o) => o.value === selectedValue) ?? null;
+  const placeholderOption = options.find((o) => o.value === '') ?? null;
+
+  const [open, setOpen] = useState(false);
+  const [highlightIndex, setHighlightIndex] = useState<number | null>(null);
+
+  // position menu in viewport using button bounding rect (portal)
+  const [menuStyle, setMenuStyle] = useState<React.CSSProperties>({});
+
+  const computeMenuPosition = useCallback(() => {
+    const btn = buttonRef.current;
+    if (!btn) return;
+    const rect = btn.getBoundingClientRect();
+    // position directly under button, full width of button
+    setMenuStyle({
+      position: 'absolute',
+      top: rect.bottom + window.scrollY + 8,
+      left: rect.left + window.scrollX,
+      width: rect.width,
+      zIndex: 9999,
+    });
+  }, []);
+
+  useEffect(() => {
+    if (open) computeMenuPosition();
+  }, [open, computeMenuPosition]);
+
+  // close on outside click / escape
+  useEffect(() => {
+    function onDocClick(e: MouseEvent) {
+      const target = e.target as Node | null;
+      if (!open) return;
+      if (containerRef.current && containerRef.current.contains(target)) return;
+      if (menuRef.current && menuRef.current.contains(target)) return;
+      setOpen(false);
+    }
+    function onKey(e: KeyboardEvent) {
+      if (!open) return;
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        setOpen(false);
+        buttonRef.current?.focus();
+      }
+    }
+    window.addEventListener('click', onDocClick);
+    window.addEventListener('keydown', onKey);
+    window.addEventListener('resize', computeMenuPosition);
+    window.addEventListener('scroll', computeMenuPosition, true);
+    return () => {
+      window.removeEventListener('click', onDocClick);
+      window.removeEventListener('keydown', onKey);
+      window.removeEventListener('resize', computeMenuPosition);
+      window.removeEventListener('scroll', computeMenuPosition, true);
+    };
+  }, [open, computeMenuPosition]);
+
+  // keyboard navigation inside button (open/close) and inside list (arrows/enter)
+  useEffect(() => {
+    if (!open) {
+      setHighlightIndex(null);
+      return;
+    }
+    const idx = options.findIndex((o) => o.value === selectedValue && !o.disabled);
+    setHighlightIndex(idx >= 0 ? idx : options.findIndex((o) => !o.disabled));
+  }, [open, options, selectedValue]);
+
+  function triggerOnChange(nextValue: string) {
+    if (typeof onChange === 'function') {
+      // imitate native event shape
+      onChange({ target: { value: nextValue } } as unknown as any);
+    }
+  }
+
+  const handleToggle = () => {
+    if (disabled) return;
+    setOpen((s) => !s);
+  };
+
+  const handleOptionClick = (opt: { value: string; label: string; disabled?: boolean }) => {
+    if (opt.disabled) return;
+    triggerOnChange(opt.value);
+    setOpen(false);
+    buttonRef.current?.focus();
+  };
+
+  const handleButtonKeyDown = (e: React.KeyboardEvent) => {
+    if (disabled) return;
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      if (!open) {
+        setOpen(true);
+        return;
+      }
+      setHighlightIndex((cur) => {
+        const enabled = options.map((o, i) => ({ o, i })).filter(({ o }) => !o.disabled);
+        if (!enabled.length) return null;
+        const indices = enabled.map((x) => x.i);
+        if (cur == null) return indices[0];
+        const pos = indices.indexOf(cur);
+        if (e.key === 'ArrowDown') {
+          return indices[(pos + 1) % indices.length];
+        } else {
+          return indices[(pos - 1 + indices.length) % indices.length];
+        }
+      });
+    } else if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      setOpen((s) => !s);
+    } else if (e.key === 'Escape') {
+      setOpen(false);
+    }
+  };
+
+  const handleMenuKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      setHighlightIndex((cur) => {
+        const enabled = options.map((o, i) => ({ o, i })).filter(({ o }) => !o.disabled);
+        if (!enabled.length) return null;
+        const indices = enabled.map((x) => x.i);
+        if (cur == null) return indices[0];
+        const pos = indices.indexOf(cur);
+        if (e.key === 'ArrowDown') {
+          return indices[(pos + 1) % indices.length];
+        } else {
+          return indices[(pos - 1 + indices.length) % indices.length];
+        }
+      });
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      if (highlightIndex != null) {
+        const opt = options[highlightIndex];
+        if (!opt?.disabled) {
+          handleOptionClick(opt);
+        }
+      }
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      setOpen(false);
+      buttonRef.current?.focus();
+    }
+  };
+
+  // caret rotation class (use transform-gpu + origin-center to avoid weird 3D flips)
+  const caretClass = open ? 'rotate-180 transform-gpu origin-center' : 'transform-gpu origin-center';
+
+  // render selected label: if selected is placeholder (value === ''), show placeholderOption label styled lighter
+  const displayLabel = selectedOption ? selectedOption.label : placeholderOption ? placeholderOption.label : '';
+
+  // styling constants - tuned to your mock
+  const controlBase = 'w-full rounded bg-white border px-5 py-3 text-lg text-zinc-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-200 disabled:bg-zinc-50 disabled:text-zinc-400';
+
+  return (
+    <div ref={containerRef} className={`relative ${className}`} {...(props as any)}>
+      {isLoading ? (
+        <div aria-busy="true" className={[controlBase, 'flex items-center gap-3 cursor-not-allowed select-none', 'border border-blue-200 text-zinc-500'].join(' ')}>
+          <RotateCw className="h-5 w-5 animate-spin text-zinc-400" />
+          <span className="text-sm">{loadingText}</span>
+        </div>
+      ) : (
+        <>
+          <button
+            ref={buttonRef}
+            type="button"
+            aria-haspopup="listbox"
+            aria-expanded={open}
+            disabled={disabled}
+            onClick={handleToggle}
+            onKeyDown={handleButtonKeyDown}
+            className={[controlBase, 'flex items-center justify-between', disabled ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer', 'border border-blue-200'].join(' ')}>
+            <span className={`truncate text-left ${selectedOption ? '' : 'text-zinc-400'}`}>{displayLabel}</span>
+
+            {/* caret */}
+            <svg className={`h-4 w-4 text-zinc-700 ml-3 transition-transform duration-150 ${caretClass}`} viewBox="0 0 20 20" fill="currentColor" aria-hidden>
+              <path d="M7 10L12 15L17 10H7Z" />
+            </svg>
+          </button>
+
+          {open &&
+            createPortal(
+              <div
+                ref={menuRef}
+                role="listbox"
+                aria-activedescendant={highlightIndex != null ? `select-opt-${highlightIndex}` : undefined}
+                tabIndex={-1}
+                onKeyDown={handleMenuKeyDown}
+                style={menuStyle}>
+                <div className="bg-white rounded shadow-lg ring-1 ring-black ring-opacity-5 overflow-hidden" style={{ maxHeight: 320, overflow: 'auto' }}>
+                  {options.map((opt, idx) => {
+                    const isHighlighted = highlightIndex === idx;
+                    const isSelected = selectedValue === opt.value;
+                    return (
+                      <div
+                        id={`select-opt-${idx}`}
+                        key={opt.value + '-' + idx}
+                        role="option"
+                        aria-selected={isSelected}
+                        onClick={() => handleOptionClick(opt)}
+                        onMouseEnter={() => setHighlightIndex(idx)}
+                        className={[
+                          'px-4 py-3 cursor-pointer select-none flex items-center justify-between',
+                          opt.disabled ? 'opacity-40 cursor-not-allowed' : 'hover:bg-zinc-100',
+                          isHighlighted ? 'bg-zinc-100' : '',
+                          // selected style: blue background + white text
+                          isSelected ? 'bg-blue-100 text-black' : '',
+                        ].join(' ')}
+                        style={{ userSelect: 'none' }}>
+                        <span className={opt.disabled ? 'text-zinc-100' : isSelected ? 'text-black' : 'text-zinc-900'}>{opt.label}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>,
+              document.body
+            )}
+        </>
+      )}
+    </div>
+  );
+}
+
+export default Select;

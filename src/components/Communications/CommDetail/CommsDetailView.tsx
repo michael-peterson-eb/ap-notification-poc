@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Button } from 'components/ui/button';
-import { Field, Section } from '../../components';
+import { Field, Section } from 'components';
 import { formatDate } from 'utils/format';
 import type { Comm } from 'hooks/comms/list/useComms';
 import { useCommsByIds } from 'hooks/comms/list/useCommsByIds';

@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import Notifications from './pages/Notifications/Notifications';
+import Communications from 'pages/Communications';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ToastProvider } from 'hooks/useToasts';
+import HeaderBar from 'components/HeaderBar';
 
 const queryClient = new QueryClient();
 
@@ -10,16 +11,16 @@ export default function App({ isDev, isStandalone }: { isDev?: boolean; isStanda
 
   useEffect(() => {
     // DOM button calls this.
-    window.__openNotificationsModal = () => setOpen(true);
+    window.__openCommunicationsModal = () => setOpen(true);
     return () => {
-      delete window.__openNotificationsModal;
+      delete window.__openCommunicationsModal;
     };
   }, []);
 
   return (
     <QueryClientProvider client={queryClient}>
       <ToastProvider>
-        <Notifications open={open} onOpenChange={setOpen} isStandalone={isStandalone} isDev={isDev} />
+        <Communications open={open} onOpenChange={setOpen} isStandalone={isStandalone} isDev={isDev} />
       </ToastProvider>
     </QueryClientProvider>
   );

@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 
-import { Section } from '../../components';
+import { Section } from 'components';
 
 import { useCommActivities, CommActivity } from 'hooks/comms/details/useCommActivities';
 import { ClipboardList, Mail } from 'lucide-react';

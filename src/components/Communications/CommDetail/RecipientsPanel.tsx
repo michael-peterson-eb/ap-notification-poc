@@ -5,7 +5,7 @@ import { UserCircle } from 'lucide-react';
 
 import { Button } from 'components/ui/button';
 import { DataTable } from 'components/DataTable';
-import { Section } from '../../components';
+import { Section } from 'components';
 
 import { COMM_STATUS_META } from 'utils/comms/conts';
 import { useCommConfirmationStatus } from 'hooks/comms/details/useCommConfirmationStatus';

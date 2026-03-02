@@ -3,6 +3,7 @@ import React from 'react';
 type Props = {
   label: string;
   hint?: string;
+  varIndex: number;
   required?: boolean;
   readOnly?: boolean;
   children: React.ReactNode;
@@ -10,14 +11,16 @@ type Props = {
   footerRight?: React.ReactNode;
 };
 
-export const VariableCard: React.FC<Props> = ({ label, hint, required, readOnly, children, footerLeft, footerRight }) => {
+export const VariableCard: React.FC<Props> = ({ label, hint, varIndex, required, readOnly, children, footerLeft, footerRight }) => {
   const showFooter = Boolean(footerLeft || footerRight);
 
   return (
-    <div className="rounded-2xl bg-white ring-1 ring-zinc-200 p-4">
+    <>
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <div className="font-medium text-zinc-900 truncate">{label}</div>
+          <div className="font-medium text-zinc-900 truncate text-base">
+            {varIndex + 1}. {label}
+          </div>
           {hint ? <div className="text-xs text-zinc-500 mt-1">{hint}</div> : null}
         </div>
 
@@ -32,6 +35,6 @@ export const VariableCard: React.FC<Props> = ({ label, hint, required, readOnly,
           <div>{footerRight ?? <span />}</div>
         </div>
       ) : null}
-    </div>
+    </>
   );
 };

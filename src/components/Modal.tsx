@@ -11,7 +11,7 @@ type ModalProps = {
   transitionMs?: number;
 };
 
-export function Modal({ open, onClose, title, children, closeOnBackdrop = true, closeOnEscape = true, widthClassName = 'max-w-5xl', transitionMs = 220 }: ModalProps) {
+export function Modal({ open, onClose, title, children, closeOnBackdrop = true, closeOnEscape = true, widthClassName = '', transitionMs = 220 }: ModalProps) {
   const panelRef = useRef<HTMLDivElement | null>(null);
 
   const [mounted, setMounted] = useState(open);
@@ -43,12 +43,6 @@ export function Modal({ open, onClose, title, children, closeOnBackdrop = true, 
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [mounted, shown, closeOnEscape, onClose]);
 
-  useEffect(() => {
-    if (!mounted || !shown) return;
-    const t = window.setTimeout(() => panelRef.current?.focus(), 0);
-    return () => window.clearTimeout(t);
-  }, [mounted, shown]);
-
   if (!mounted) return null;
 
   const overlayStyle: React.CSSProperties = {
@@ -64,7 +58,7 @@ export function Modal({ open, onClose, title, children, closeOnBackdrop = true, 
 
   const panelStyle: React.CSSProperties = {
     opacity: shown ? 1 : 0,
-    transform: shown ? 'translateY(0px) scale(1)' : 'translateY(10px) scale(0.98)',
+    transform: shown ? 'translateY(0px) scale(1) translateX(144px)' : 'translateY(10px) scale(0.98)',
     transition: `opacity ${transitionMs}ms ease, transform ${transitionMs}ms ease`,
   };
 
@@ -77,20 +71,10 @@ export function Modal({ open, onClose, title, children, closeOnBackdrop = true, 
       <div
         ref={panelRef}
         tabIndex={-1}
-        className={['relative z-10 w-[95vw]', widthClassName, 'max-h-[90vh] overflow-hidden rounded-lg border border-zinc-300 bg-white shadow-xl', 'flex flex-col'].join(' ')}
+        className="relative z-10 w-4/5 max-h-[90vh] overflow-hidden rounded-lg border bg-white shadow-xl ring-0 flex flex-col"
         style={panelStyle}
         onClick={(e) => e.stopPropagation()}>
-        {/* Header */}
-        <div className="sticky top-0 z-10 flex items-center justify-between border-b border-zinc-200 bg-white px-4 py-3">
-          <div className="min-w-0">{title ? <div className="truncate text-sm font-medium">{title}</div> : <div className="truncate text-sm font-medium">Modal</div>}</div>
-
-          <button type="button" className="rounded-md border border-zinc-300 px-3 py-1 text-sm hover:bg-zinc-50" onClick={onClose}>
-            Close
-          </button>
-        </div>
-
-        {/* Body */}
-        <div className="flex-1 overflow-auto p-4 bg-zinc-100">{children}</div>
+        <div className="flex-1 overflow-auto">{children}</div>
       </div>
     </div>
   );

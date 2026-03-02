@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Select } from '../../../components/Select';
+import { Select } from 'components/Select';
 import { Checkbox } from 'components/ui/checkbox'; // adjust if your path differs
 import { MultiSelectToggle } from './MultiSelectToggle';
 import { SelectionOption, VariableType } from './types';

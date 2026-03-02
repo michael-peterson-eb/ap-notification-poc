@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import type { CommVariableDef } from 'pages/Notifications/Tabs/Comms/VariableFields/types';
+import type { CommVariableDef } from 'components/Communications/LaunchComm/VariableFields/types';
 
 type Args = {
   tokenResponse: any;

@@ -11,7 +11,7 @@ type Props = {
 
 export const MultiSelectToggle: React.FC<Props> = ({ options, value, disabled, onChange }) => {
   return (
-    <div className="rounded-xl bg-white ring-1 ring-zinc-200 p-2">
+    <div className="rounded bg-white ring-1 ring-blue-200 p-2 focus:outline-none focus:ring-2 focus:ring-blue-300 disabled:bg-zinc-50 disabled:text-zinc-400" >
       {/* Selected pills */}
       {value.length ? (
         <div className="flex flex-wrap gap-2 mb-2">

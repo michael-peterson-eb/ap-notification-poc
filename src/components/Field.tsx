@@ -1,5 +1,5 @@
 type FieldProps = {
-  label: string;
+  label?: string;
   children: React.ReactNode;
   hint?: string;
   required?: boolean;
@@ -15,9 +15,7 @@ export default function Field({ label, children, hint, required = false }: Field
 
       {children}
 
-      {hint ? (
-        <span className="text-[11px] text-zinc-500">{hint}</span>
-      ) : null}
+      {hint ? <span className="text-[11px] text-zinc-500">{hint}</span> : null}
     </label>
   );
 }
