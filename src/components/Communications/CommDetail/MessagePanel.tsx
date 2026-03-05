@@ -20,7 +20,7 @@ export default function MessagePanel({ comm, token, variables = [], valuesById =
       {error && <div className="text-sm text-red-600">Error loading content: {String(error.message)}</div>}
       {!isLoading && !error && contents.length === 0 && <div className="text-sm text-zinc-500">No message content available</div>}
 
-      {!isLoading && !error && contents.length > 0 && <PreviewMessages contents={contents} variables={variables} valuesById={valuesById} />}
+      {!isLoading && !error && contents.length > 0 && <PreviewMessages contents={contents} variables={variables} valuesById={valuesById} showPreviewHeader={false} />}
     </div>
   );
 }

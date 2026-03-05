@@ -222,7 +222,7 @@ export function RecipientDetailsPanel({ commId, token, statuses = DEFAULT_STATUS
   };
 
   return (
-    <div className="pt-8">
+    <div className="pt-8 pb-8">
       <span className="text-xl font-normal text-[#13151C]">Recipient Details</span>
       {recipientLogs.error && (
         <div className="mt-3">

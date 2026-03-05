@@ -108,14 +108,18 @@ export function CommDetailView({ commId, token, onBack, onCommActive }: Props) {
   }, [commId, isLoading]); // <-- important: re-run when loading finishes / comm changes
 
   if (isLoading) {
-    return <Loader />;
+    return (
+      <div className="h-full flex items-center">
+        <Loader />
+      </div>
+    );
   }
 
   return (
     comm && (
       <div className="min-h-[60vh]">
-        <DetailHeaderBar onBack={onBack} onCommActive={onCommActive} comm={comm} disabled={disabled} handleRefresh={handleRefresh} />
-        <div className="mb-8">
+        <DetailHeaderBar onBack={onBack} onCommActive={onCommActive} comm={comm} disabled={disabled} handleRefresh={handleRefresh} isRefreshing={isRefreshing} />
+        <div className="mb-8 mt-2">
           <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-3">
             <div>
               <div className="flex items-center gap-3">
@@ -128,7 +132,7 @@ export function CommDetailView({ commId, token, onBack, onCommActive }: Props) {
           <CommInfoPanel comm={comm} />
         </div>
         <div className="flex gap-6">
-          <div ref={leftRef} className="w-96 flex flex-col" style={{ maxHeight: `${leftPx}px` }}>
+          <div ref={leftRef} className="w-[450px] flex flex-col" style={{ maxHeight: `${leftPx}px` }}>
             <ActivitiesPanel confirmation={confirmation} commId={commId} comm={comm} token={token} />
           </div>
 

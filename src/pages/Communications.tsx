@@ -59,16 +59,16 @@ function CommunicationsContent({ isDev, isStandalone }: { isDev?: boolean; isSta
   if (isStandalone)
     <div className={`h-full bg-[linear-gradient(146deg,rgba(224,237,255,0.41)_26.27%,rgba(218,217,255,0.50)_37.44%,rgba(224,235,255,0.41)_61.17%,rgba(233,240,255,0.50)_84.9%)] relative w-full`}>
       <div className="relative w-full h-full">
-        <div className="flex-1 min-h-0 space-y-4">
+        <div className="flex-1 min-h-0 space-y-4 h-full">
           <CommsTabShell tokenResponse={tokenQuery} permissions={permissions} />
         </div>
       </div>
     </div>;
 
   return (
-    <div className={`h-full bg-[linear-gradient(146deg,rgba(224,237,255,0.41)_26.27%,rgba(218,217,255,0.50)_37.44%,rgba(224,235,255,0.41)_61.17%,rgba(233,240,255,0.50)_84.9%)] relative w-full p-10`}>
-      <div className="relative w-full h-full">
-        <div className="flex-1 min-h-0 space-y-4">
+    <div className={`h-full bg-white`}>
+      <div className="p-10 relative w-full h-full bg-repeat-y bg-[linear-gradient(146deg,rgba(224,237,255,0.41),rgba(218,217,255,0.50),rgba(224,235,255,0.41),rgba(233,240,255,0.50))]">
+        <div className="flex-1 min-h-0 space-y-4 h-full">
           <CommsTabShell tokenResponse={tokenQuery} permissions={permissions} />
         </div>
       </div>

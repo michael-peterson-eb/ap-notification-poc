@@ -32,7 +32,7 @@ type ActionRowProps = {
 
 function ActionRow({ label, subline, icon }: ActionRowProps) {
   return (
-    <div className="px-4 py-3 mt-4">
+    <div className="py-3 mt-4">
       <div className="flex items-start gap-3">
         <div className="mt-0.5">{icon ?? ACTION_ICONS['INIT']}</div>
         <div>

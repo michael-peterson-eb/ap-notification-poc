@@ -39,10 +39,10 @@ function parseIsoToLocalDate(iso: string): Date {
 export function DateRangePill({ dateValue, onDateChange, ariaLabel = 'Date range selector' }: Props) {
   const presets: Preset[] = React.useMemo(
     () => [
-      { label: '7 D', days: 7 },
-      { label: '14 D', days: 14 },
-      { label: '21 D', days: 21 },
       { label: '30 D', days: 30 },
+      { label: '60 D', days: 60 },
+      { label: '90 D', days: 90 },
+      { label: '1 Y', days: 365 },
     ],
     []
   );

@@ -15,7 +15,7 @@ import { useToasts } from 'hooks/useToasts';
 type TabKey = 'launch' | 'list' | 'settings';
 
 const TabButton = ({ active, children, onClick }: { active: boolean; children: React.ReactNode; onClick: () => void }) => (
-  <button type="button" onClick={onClick} className={['relative px-4 py-3 text-sm font-medium', active ? 'text-blue-700' : 'text-zinc-700 hover:text-zinc-900'].join(' ')}>
+  <button type="button" onClick={onClick} className={['relative ml-2 mr-4 py-3 text-sm font-medium', active ? 'text-blue-700' : 'text-zinc-700 hover:text-zinc-900'].join(' ')}>
     {children}
     <span className={['absolute left-0 right-0 -bottom-px h-[2px] rounded-full', active ? 'bg-blue-600' : 'bg-transparent'].join(' ')} />
   </button>

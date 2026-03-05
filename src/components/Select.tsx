@@ -178,7 +178,7 @@ export function Select({ children, isLoading, loadingText = 'Loading…', classN
   };
 
   // caret rotation class (use transform-gpu + origin-center to avoid weird 3D flips)
-  const caretClass = open ? 'rotate-180 transform-gpu' : 'transform-gpu';
+  const caretClass = open ? 'rotate-0 transform-gpu' : 'rotate-180 transform-gpu';
 
   // render selected label: if selected is placeholder (value === ''), show placeholderOption label styled lighter
   const displayLabel = selectedOption ? selectedOption.label : placeholderOption ? placeholderOption.label : '';

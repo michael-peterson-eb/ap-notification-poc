@@ -90,7 +90,7 @@ export function RecipientsPanel({ confirmation }: Props) {
       {!confirmation?.isLoading && !confirmation?.error && (
         <div className="flex p-8 gap-8">
           <div
-            className="w-48 shrink-0 h-full flex flex-col items-center rounded-xl p-6
+            className="w-64 shrink-0 h-full flex flex-col items-center rounded-xl p-6
                             border-2 border-[rgba(104,118,143,0.15)]
                             bg-[linear-gradient(0deg,rgba(29,100,232,0.01)_0%,rgba(29,100,232,0.01)_100%),linear-gradient(180deg,#FFF_0%,#FDFDFD_100%)]
                             shadow-[0_4px_8px_0_rgba(0,0,0,0.08),0_6px_30px_-4px_rgba(29,100,232,0.25)]">
@@ -100,8 +100,8 @@ export function RecipientsPanel({ confirmation }: Props) {
                 <span className="font-normal text-black text-3xl">{confirmation?.data?.totalCount}</span>
               </div>
             </div>
-            <div className="w-[160px] h-[160px] mt-6">
-              <ResponsiveContainer width={160} height={160}>
+            <div className="w-[200px] h-[300px] mt-6">
+              <ResponsiveContainer width={200} height={300}>
                 <PieChart>
                   <Pie
                     data={pieData}
@@ -109,8 +109,8 @@ export function RecipientsPanel({ confirmation }: Props) {
                     nameKey="name"
                     cx="50%"
                     cy="50%"
-                    innerRadius={45}
-                    outerRadius={70} // reduce a bit to guarantee no clipping
+                    innerRadius={55}
+                    outerRadius={85} // reduce a bit to guarantee no clipping
                     isAnimationActive={false}
                   />
                   <Tooltip />

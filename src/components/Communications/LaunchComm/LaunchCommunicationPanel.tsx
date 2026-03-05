@@ -39,6 +39,9 @@ const LaunchCommunicationPanel = ({ tokenResponse, permissions, setActiveTab }) 
   // Description
   const [description, setDescription] = useState('');
 
+  // Exercise mode
+  const [exercise, setExercise] = useState<boolean>(false);
+
   // Mode - always live right now
   const mode: Mode = 'LIVE';
 
@@ -79,6 +82,7 @@ const LaunchCommunicationPanel = ({ tokenResponse, permissions, setActiveTab }) 
   const resetLaunch = () => {
     setTitle('General');
     setTemplateId('');
+    setExercise(false);
   };
 
   function buildLaunchBody(contextVariables?: Array<{ variableId: string; value: string | string[] }>) {
@@ -88,6 +92,7 @@ const LaunchCommunicationPanel = ({ tokenResponse, permissions, setActiveTab }) 
       ...(description ? { description } : {}),
       ...(eventType ? { eventType } : {}),
       templateId: `commsTemplate://${templateId}`,
+      ...(typeof exercise === 'boolean' ? { exercise } : {}),
       ...(contextVariables?.length ? { context: { variables: contextVariables } } : {}),
     };
   }
@@ -179,6 +184,8 @@ const LaunchCommunicationPanel = ({ tokenResponse, permissions, setActiveTab }) 
       <LaunchHeader
         title={title}
         description={description}
+        exercise={exercise}
+        onToggleExercise={(next: boolean) => setExercise(next)}
         onSaveTitle={(nextTitle: string) => {
           setTitle(nextTitle);
           setTitleManuallyEdited(true);

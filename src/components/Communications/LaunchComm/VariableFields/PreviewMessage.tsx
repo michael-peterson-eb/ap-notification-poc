@@ -25,6 +25,7 @@ type PreviewMessagesProps = {
   valuesById: Record<string, string | string[] | null | undefined>;
   defaultOpen?: Record<string, boolean>;
   getChannelLabel?: (c: MessageContent) => string;
+  showPreviewHeader?: boolean;
 };
 
 function normalizeKey(s: string) {
@@ -82,7 +83,7 @@ function isHtmlContentType(contentType?: string) {
   return (contentType ?? '').toLowerCase().includes('text/html');
 }
 
-export function PreviewMessages({ contents, variables, valuesById, defaultOpen, getChannelLabel = defaultGetChannelLabel }: PreviewMessagesProps) {
+export function PreviewMessages({ contents, variables, valuesById, defaultOpen, getChannelLabel = defaultGetChannelLabel, showPreviewHeader = true }: PreviewMessagesProps) {
   const [open, setOpen] = useState<Record<string, boolean>>(defaultOpen ?? { Email: true, SMS: false, Voice: false });
 
   const valueIndex = useMemo(() => buildValueIndex(variables ?? [], valuesById ?? {}), [variables, valuesById]);
@@ -99,14 +100,14 @@ export function PreviewMessages({ contents, variables, valuesById, defaultOpen, 
   if (!contents?.length) return null;
 
   return (
-    <div className="p-6">
-      <div className="text-[22px] font-medium text-[#13151C] mb-4">Preview the Message</div>
+    <div className={`${showPreviewHeader ? 'p-6' : 'px-6 py-2'}`}>
+      {showPreviewHeader && <div className="text-[22px] font-medium text-[#13151C] mb-2">Preview the Message</div>}
 
       {Array.from(grouped.entries()).map(([label, items]) => {
         const isOpen = Boolean(open[label]);
 
         return (
-          <div key={label} className="py-3">
+          <div key={label} className="py-1.5">
             {/* Whole header row is clickable */}
             <button type="button" className="w-full flex items-center gap-2 text-left py-2 rounded-md hover:bg-zinc-50" onClick={() => setOpen((s) => ({ ...s, [label]: !s[label] }))}>
               {/* Chevron on the LEFT */}
@@ -116,7 +117,7 @@ export function PreviewMessages({ contents, variables, valuesById, defaultOpen, 
             </button>
 
             {isOpen ? (
-              <div className="mt-3 space-y-4">
+              <div className="mt-1.5 space-y-4">
                 {items.map((c, idx) => {
                   const interpolated = interpolateTemplate(c.content ?? '', valueIndex);
                   const title = c.title?.trim();
@@ -126,7 +127,7 @@ export function PreviewMessages({ contents, variables, valuesById, defaultOpen, 
 
                   return (
                     // No grey background; keep spacing/padding similar
-                    <div key={idx} className="rounded-xl p-4">
+                    <div key={idx} className="rounded-xl px-4 py-2">
                       {title ? <div className="text-sm font-semibold text-zinc-900 mb-2">{title}</div> : null}
 
                       {html ? (
