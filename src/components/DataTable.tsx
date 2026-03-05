@@ -12,11 +12,12 @@ type Props<T> = {
 
   onScroll?: React.UIEventHandler<HTMLDivElement>;
   scrollRef?: React.RefObject<HTMLDivElement>;
+  onRowPress?: (row: T) => void;
 
   footer?: React.ReactNode;
 };
 
-export function DataTable<T>({ data, columns, emptyText = 'No results.', wrapperClassName = '', heightClassName = 'h-[440px]', onScroll, scrollRef, footer }: Props<T>) {
+export function DataTable<T>({ data, columns, emptyText = 'No results.', wrapperClassName = '', heightClassName = 'h-[440px]', onScroll, scrollRef, onRowPress, footer }: Props<T>) {
   const table = useReactTable({ data, columns, getCoreRowModel: getCoreRowModel() });
 
   const [atTop, setAtTop] = React.useState(true);
@@ -102,7 +103,7 @@ export function DataTable<T>({ data, columns, emptyText = 'No results.', wrapper
           <TableBody>
             {table.getRowModel().rows.length ? (
               table.getRowModel().rows.map((row) => (
-                <TableRow key={row.id} className="border-b border-[#EEF3FF] hover:bg-[#F6F8FF]">
+                <TableRow key={row.id} className="border-b border-[#EEF3FF] hover:bg-[#F6F8FF] hover:cursor-pointer" onClick={() => onRowPress && onRowPress(row.original)}>
                   {row.getVisibleCells().map((cell, idx) => (
                     <TableCell key={cell.id} className={[idx === 0 ? 'px-0 !pl-4' : '', idx === row.getVisibleCells().length - 1 ? 'pr-4' : ''].join(' ')}>
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}

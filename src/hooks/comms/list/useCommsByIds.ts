@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useQueries } from '@tanstack/react-query';
 
 export type Comm = {
-  id: string;
+  commId: string;
   title?: string;
   eventType?: string;
   status?: string;
@@ -23,6 +23,7 @@ function toMillis(iso?: string) {
 function normalizeComm(raw: any): Comm {
   return {
     id: raw.commId ?? raw.id,
+    commId: raw.commId ?? raw.id,
     title: raw.title ?? raw.name,
     eventType: raw.eventType,
     status: raw.status,
@@ -124,7 +125,7 @@ export function useCommsByIds(commIds: Array<string | number>, opts: Options): U
 
   const queries = useQueries({
     queries: visibleIds.map((commId) => ({
-      queryKey: ['comms:byId', commId, resetNonce],
+      queryKey: ['comms', commId, resetNonce],
       enabled: enabled && visibleIds.length > 0,
       queryFn: () => fetchCommById({ idToken, commId }),
       retry: 0,

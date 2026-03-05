@@ -59,7 +59,7 @@ export function useCommActivities(commId: string | null, opts: Options) {
   const pageSize = opts.pageSize ?? 100;
 
   const query = useQuery({
-    queryKey: ['comm', commId, 'activities', { pageSize }],
+    queryKey: ['comms', commId, 'activities', { pageSize }],
     enabled,
     queryFn: () => fetchCommActivities({ commId: commId!, tokenResponse: opts.token, pageSize }),
     staleTime: 15_000,

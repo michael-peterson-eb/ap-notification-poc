@@ -1,39 +1,13 @@
-import React, { useMemo, useState, useEffect } from 'react';
-import type { ColumnDef } from '@tanstack/react-table';
-import { PieChart, Pie, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { UserCircle } from 'lucide-react';
-
-import { Button } from 'components/ui/button';
-import { DataTable } from 'components/DataTable';
-import { Section } from 'components';
+import React, { useMemo } from 'react';
+import { PieChart, Pie, Tooltip, ResponsiveContainer } from 'recharts';
 
 import { COMM_STATUS_META } from 'utils/comms/conts';
-import { useCommConfirmationStatus } from 'hooks/comms/details/useCommConfirmationStatus';
-import { useCommRecipientLogs, CommRecipientLog } from 'hooks/comms/details/useCommRecipientLogs';
-
-const DEFAULT_STATUSES = ['Confirmed', 'ConfirmedLate', 'Attempted', 'Duplicate', 'Unreachable'];
 
 type Props = {
-  commId: string;
-  token: any;
-  // optional override
-  statuses?: string[];
-  defaultPageSize?: number; // default 50
+  confirmation: any;
 };
 
-export function RecipientsPanel({ commId, token, statuses = DEFAULT_STATUSES, defaultPageSize = 50 }: Props) {
-  // pagination state
-  const [pageNumber, setPageNumber] = useState(1);
-  const [pageSize] = useState(defaultPageSize);
-
-  // reset page when comm changes
-  useEffect(() => {
-    setPageNumber(1);
-  }, [commId]);
-
-  // --- Summary (pie) ---
-  const confirmation = useCommConfirmationStatus(commId, { token, enabled: !!commId });
-
+export function RecipientsPanel({ confirmation }: Props) {
   const pieData = useMemo(() => {
     const d = confirmation.data;
     if (!d) return [];
@@ -54,161 +28,122 @@ export function RecipientsPanel({ commId, token, statuses = DEFAULT_STATUSES, de
     }));
   }, [confirmation.data]);
 
-  // --- Recipient logs (table) ---
-  const recipientLogs = useCommRecipientLogs(
-    commId
-      ? {
-          commId,
-          statuses,
-          pageSize,
-          pageNumber,
-        }
-      : null,
-    { token, enabled: !!commId }
-  );
+  const totalCount = confirmation.data?.totalCount ?? 0;
 
-  const { hasNextPage, hasPrevPage } = recipientLogs;
+  const statusRows = useMemo(() => {
+    // keep order exactly like the mock
+    const wantedOrder = ['Confirmed', 'ConfirmedLate', 'Attempted', 'Unreachable'];
 
-  const pager = (hasNextPage || hasPrevPage) && (
-    <div className="flex items-center gap-2">
-      <Button variant="secondary" size="sm" disabled={!recipientLogs.hasPrevPage || recipientLogs.isFetching} onClick={() => setPageNumber((p) => Math.max(1, p - 1))}>
-        Prev
-      </Button>
+    return wantedOrder.map((key) => {
+      // your pieData currently has name/value/fill; may not include key unless you added it
+      const found = pieData.find((p: any) => p.key === key) ?? pieData.find((p: any) => p.name === (COMM_STATUS_META[key]?.label ?? key));
 
-      <div className="text-xs text-zinc-600">
-        Page <strong className="text-zinc-900">{recipientLogs.pageNumber}</strong>
-        <span className="mx-2 text-zinc-300">•</span>
-        Size <strong className="text-zinc-900">{recipientLogs.pageSize}</strong>
-      </div>
+      const value = Number(found?.value ?? 0);
+      const color = found?.fill ?? COMM_STATUS_META[key]?.color ?? '#6b7280';
+      const label = key === 'Attempted' ? 'Not Confirmed' : (COMM_STATUS_META[key]?.label ?? found?.name ?? key);
+      const pct = totalCount > 0 ? (value / totalCount) * 100 : 0;
 
-      <Button variant="secondary" size="sm" disabled={!recipientLogs.hasNextPage || recipientLogs.isFetching} onClick={() => setPageNumber((p) => p + 1)}>
-        Next
-      </Button>
-    </div>
-  );
+      return { key, label, value, pct, color };
+    });
+  }, [pieData, totalCount]);
 
-  const columns = useMemo<ColumnDef<CommRecipientLog>[]>(() => {
-    return [
-      {
-        id: 'statusIcon',
-        header: '',
-        enableSorting: false,
-        cell: ({ row }) => {
-          const status = row.original.status;
-          const meta = COMM_STATUS_META[status] ?? { label: status, color: '#6b7280', icon: UserCircle };
-          const Icon = meta.icon;
-
-          return (
-            <div className="flex items-center justify-center w-7 h-7 rounded-full" style={{ backgroundColor: `${meta.color}15` }}>
-              <Icon className="h-4 w-4" style={{ color: meta.color }} />
-            </div>
-          );
-        },
-      },
-      {
-        accessorKey: 'fullName',
-        header: 'Recipient',
-        cell: ({ row }) => (
-          <div className="min-w-[180px]">
-            <div className="text-sm font-medium text-zinc-900">{row.original.fullName ?? row.original.recipientId}</div>
-            <div className="text-xs text-zinc-500">
-              {row.original.externalId ? <span className="mr-2">ID: {row.original.externalId}</span> : null}
-              <span className="font-mono">RID: {row.original.recipientId}</span>
-            </div>
+  const ConfirmationError = () => {
+    if (confirmation.error) {
+      const err: any = confirmation.error;
+      const status = err?.status ?? err?.response?.status ?? err?.originalStatus;
+      const is404 = status === 404;
+      const is504 = status === 504;
+      if (is404) {
+        return (
+          <div className="bg-amber-50 ring-1 ring-amber-200 p-3 rounded-xl text-sm text-amber-900">
+            <div className="font-medium">We couldn’t find confirmation data yet.</div>
+            <div className="mt-1 text-amber-800">If you just created this communication, it can take a few seconds to become available. Please wait a moment and refresh.</div>
           </div>
-        ),
-      },
-      {
-        accessorKey: 'status',
-        header: 'Status',
-        cell: ({ row }) => {
-          const status = row.original.status;
-          const meta = COMM_STATUS_META[status] ?? { label: status, color: '#6b7280', icon: UserCircle };
-          return (
-            <span className="text-xs px-2 py-0.5 rounded-full" style={{ backgroundColor: `${meta.color}20`, color: meta.color }}>
-              {meta.label}
-            </span>
-          );
-        },
-      },
-      {
-        id: 'email',
-        header: 'Email',
-        cell: ({ row }) => {
-          const email = row.original.recipientLogByPath?.find((p) => p.pathCategory === 'EMAIL')?.pathValue ?? '';
-          return <span className="text-xs text-zinc-700">{email}</span>;
-        },
-      },
-      {
-        id: 'sms',
-        header: 'SMS',
-        cell: ({ row }) => {
-          const sms = row.original.recipientLogByPath?.find((p) => p.pathCategory === 'SMS')?.pathValue ?? '';
-          return <span className="text-xs text-zinc-700">{sms}</span>;
-        },
-      },
-      {
-        accessorKey: 'firstAttemptDate',
-        header: 'First Attempt',
-        cell: ({ row }) => {
-          const d = row.original.firstAttemptDate ? new Date(row.original.firstAttemptDate) : null;
-          return <span className="text-xs text-zinc-500">{d ? d.toLocaleString() : ''}</span>;
-        },
-      },
-    ];
-  }, []);
+        );
+      }
+
+      if (is504) {
+        return (
+          <div className="bg-red-50 ring-1 ring-red-200 p-3 rounded-xl text-sm text-red-900">
+            <div className="font-medium">Gateway Timeout</div>
+            <div className="mt-1 text-red-800">The server took too long to respond. Please try again later.</div>
+          </div>
+        );
+      }
+      return <pre className="text-red-700 bg-red-50 ring-1 ring-red-200 p-3 rounded-xl overflow-auto text-xs">{JSON.stringify(confirmation.error, null, 2)}</pre>;
+    } else {
+      return null;
+    }
+  };
 
   return (
-    <>
-      {/* Chart section */}
-      <div className="mt-6">
-        <Section
-          title="Recipient Confirmation"
-          variant="light"
-          tone="blue"
-          description={confirmation.data ? `Total: ${confirmation.data.totalCount}` : 'Confirmation counts by status.'}
-          right={confirmation.isFetching ? <div className="text-xs text-zinc-500">Refreshing…</div> : null}>
-          {confirmation.error ? (
-            (() => {
-              const err: any = confirmation.error;
-              const status = err?.status ?? err?.response?.status ?? err?.originalStatus;
-              const is404 = status === 404;
-
-              if (is404) {
-                return (
-                  <div className="bg-amber-50 ring-1 ring-amber-200 p-3 rounded-xl text-sm text-amber-900">
-                    <div className="font-medium">We couldn’t find confirmation data yet.</div>
-                    <div className="mt-1 text-amber-800">If you just created this communication, it can take a few seconds to become available. Please wait a moment and refresh.</div>
-                  </div>
-                );
-              }
-
-              return <pre className="text-red-700 bg-red-50 ring-1 ring-red-200 p-3 rounded-xl overflow-auto text-xs">{JSON.stringify(confirmation.error, null, 2)}</pre>;
-            })()
-          ) : confirmation.isLoading ? (
-            <div className="text-sm text-zinc-600">Loading confirmation status…</div>
-          ) : (
-            <div className="h-72">
-              <ResponsiveContainer width="100%" height="100%">
+    <div className="rounded-xl bg-[linear-gradient(0deg,rgba(29,100,232,0.01)_0%,rgba(29,100,232,0.01)_100%),linear-gradient(180deg,#FFF_0%,#FDFDFD_100%)] shadow-[0_4px_8px_0_rgba(0,0,0,0.08),0_6px_30px_-4px_rgba(29,100,232,0.25)]">
+      <div className="border-b border-[#76A5FF] px-8 py-4">
+        <span className="text-xl font-normal text-[#13151C]">Confirmation Status</span>
+      </div>
+      {confirmation.error && (
+        <div className="p-8">
+          <ConfirmationError />
+        </div>
+      )}
+      {confirmation?.isLoading && <div className="p-8">Loading confirmation status…</div>}
+      {!confirmation?.isLoading && !confirmation?.error && (
+        <div className="flex p-8 gap-8">
+          <div
+            className="w-48 shrink-0 h-full flex flex-col items-center rounded-xl p-6
+                            border-2 border-[rgba(104,118,143,0.15)]
+                            bg-[linear-gradient(0deg,rgba(29,100,232,0.01)_0%,rgba(29,100,232,0.01)_100%),linear-gradient(180deg,#FFF_0%,#FDFDFD_100%)]
+                            shadow-[0_4px_8px_0_rgba(0,0,0,0.08),0_6px_30px_-4px_rgba(29,100,232,0.25)]">
+            <div>
+              <div className="font-normal text-[#13151C] text-lg">Total Recipients</div>
+              <div>
+                <span className="font-normal text-black text-3xl">{confirmation?.data?.totalCount}</span>
+              </div>
+            </div>
+            <div className="w-[160px] h-[160px] mt-6">
+              <ResponsiveContainer width={160} height={160}>
                 <PieChart>
-                  <Pie data={pieData} dataKey="value" nameKey="name" innerRadius={55} outerRadius={95} isAnimationActive={false} />
+                  <Pie
+                    data={pieData}
+                    dataKey="value"
+                    nameKey="name"
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={45}
+                    outerRadius={70} // reduce a bit to guarantee no clipping
+                    isAnimationActive={false}
+                  />
                   <Tooltip />
-                  <Legend />
                 </PieChart>
               </ResponsiveContainer>
             </div>
-          )}
-        </Section>
-      </div>
+          </div>
+          <div className="flex-1 rounded-xl p-6 bg-[rgba(29,100,232,0.02)] border border-[rgba(104,118,143,0.10)]">
+            <div className="space-y-6">
+              {statusRows.map((r) => (
+                <div key={r.key}>
+                  <div className="flex items-center justify-between">
+                    <div className="text-sm font-normal text-[#2B3445]">{r.label}</div>
+                    <div className="text-sm font-semibold text-[#13151C]">{r.value}</div>
+                  </div>
 
-      {/* Recipients table section */}
-      <div className="mt-6">
-        <Section title="Recipients" variant="light" tone="blue" right={pager}>
-          {recipientLogs.error ? <pre className="text-red-700 bg-red-50 ring-1 ring-red-200 p-3 rounded-xl overflow-auto text-xs">{JSON.stringify(recipientLogs.error, null, 2)}</pre> : null}
+                  <div className="mt-2 h-3 w-full rounded-full bg-[rgba(104,118,143,0.15)] overflow-hidden">
+                    <div
+                      className="h-full rounded-full"
+                      style={{
+                        width: `${Math.min(100, Math.max(0, r.pct))}%`,
+                        backgroundColor: r.color,
+                      }}
+                    />
+                  </div>
 
-          <DataTable data={recipientLogs.rows} columns={columns} emptyText={recipientLogs.isLoading ? 'Loading recipients…' : 'No recipients found.'} />
-        </Section>
-      </div>
-    </>
+                  <div className="mt-2 text-xs text-[#6B7280]">{Math.round(r.pct)}%</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }

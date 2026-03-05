@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { Button } from 'components/ui/button';
-import type { CommTemplateDetail } from 'hooks/comms/list/useCommTemplatesByIds';
+import type { CommTemplateDetail } from 'hooks/comms/launch/useCommTemplatesByIds';
 import { useCreateContactBuilderSession } from 'hooks/comms/contacts/useCreateContactBuilderSession';
 import { useContactBuilderSession } from 'hooks/comms/contacts/useContactBuilderSession';
 import { useContactPreview } from 'hooks/comms/contacts/useContactBuilderPreview';

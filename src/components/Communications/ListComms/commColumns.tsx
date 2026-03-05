@@ -10,7 +10,7 @@ type StopCommShape = {
   mutate: (args: { commId: string }) => void;
 };
 
-function formatRelative(dateIso: any) {
+export function formatRelative(dateIso: any) {
   const d = new Date(dateIso);
   const ms = Date.now() - d.getTime();
   const mins = Math.floor(ms / 60000);
@@ -21,15 +21,13 @@ function formatRelative(dateIso: any) {
   return `${days}d ago`;
 }
 
-function toTitleCase(value: string | null | undefined) {
+export function toTitleCase(value: string | null | undefined) {
   if (!value) return '';
   const lower = value.toLowerCase();
   return lower.charAt(0).toUpperCase() + lower.slice(1);
 }
 
-export default function getCommColumns(args: { onSelect: (comm: Comm) => void; stopComm: StopCommShape; permissions: Permission[] }): ColumnDef<Comm>[] {
-  const { onSelect, stopComm, permissions } = args;
-
+export default function getCommColumns(): ColumnDef<Comm>[] {
   type ThreadStatus = 'ACTIVE' | 'INACTIVE';
 
   function resolveThreadStatus(row: any): ThreadStatus {
@@ -69,11 +67,7 @@ export default function getCommColumns(args: { onSelect: (comm: Comm) => void; s
       header: 'Name',
       cell: ({ row }) => {
         const comm = row.original;
-        return (
-          <button type="button" className="text-left text-sm font-normal text-[#070D1A] hover:underline" onClick={() => onSelect(comm)}>
-            {comm.title ?? comm.id}
-          </button>
-        );
+        return <span className="text-left text-sm font-normal text-[#070D1A]">{comm.title ?? comm.id}</span>;
       },
     },
     {
@@ -93,36 +87,40 @@ export default function getCommColumns(args: { onSelect: (comm: Comm) => void; s
     },
   ];
 
-  if (permissions.includes('bc.comms.launch')) {
-    columns.push({
-      id: 'actions',
-      accessorKey: '',
-      header: '',
-      enableSorting: false,
-      cell: ({ row }) => {
-        const comm = row.original;
-        const canCancel = !!comm.notificationStatus && comm.notificationStatus !== 'Stopped' && comm.notificationStatus !== 'Completed';
+  // if (permissions.includes('bc.comms.launch')) {
+  //   columns.push({
+  //     id: 'actions',
+  //     accessorKey: '',
+  //     header: '',
+  //     enableSorting: false,
+  //     cell: ({ row }) => {
+  //       const comm = row.original;
+  //       const canCancel = !!comm.notificationStatus && comm.notificationStatus !== 'Stopped' && comm.notificationStatus !== 'Completed';
 
-        return (
-          <div className="flex justify-end">
-            <Button variant="destructive" size="sm" disabled={!canCancel || stopComm.isPending} onClick={() => stopComm.mutate({ commId: comm.id })}>
-              Stop
-            </Button>
-          </div>
-        );
-      },
-    });
-  }
+  //       return (
+  //         <div className="flex justify-end">
+  //           <Button variant="destructive" size="sm" disabled={!canCancel || stopComm.isPending} onClick={() => stopComm.mutate({ commId: comm.id })}>
+  //             Stop
+  //           </Button>
+  //         </div>
+  //       );
+  //     },
+  //   });
+  // }
 
   return columns;
 }
 
-function StatusCell({ status }: { status: string }) {
-  const s = String(status ?? '');
-  const isActive = s.toLowerCase() === 'active';
+export function StatusCell({ status }: { status: string | boolean }) {
+  let statusText = status;
+  if (typeof status === 'boolean') {
+    statusText = status ? 'Active' : 'Inactive';
+  }
+  const s = String(statusText ?? '');
+  const isActive = s.toLowerCase() === 'active' || status === true;
 
   return (
-    <div className="flex items-center gap-3">
+    <div className="flex items-center gap-1">
       <span className={cn('h-2.5 w-2.5 rounded-full', isActive ? 'bg-green-500' : 'bg-slate-300')} />
       <span className="font-normal text-[#070D1A] text-sm">{s}</span>
     </div>

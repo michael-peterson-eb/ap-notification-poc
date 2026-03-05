@@ -1,15 +1,16 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
-type StopCommArgs = { commId: string };
+type SetCommActiveArgs = { commId: string; active: boolean };
 
 function normalizeCommId(commId: string) {
   return commId.replace(/^[a-zA-Z]+:\/\//, '');
 }
 
-async function stopCommRequest(commIdRaw: string, accessToken: string) {
+async function setCommActiveRequest(commIdRaw: string, active: boolean, accessToken: string) {
   const commId = normalizeCommId(commIdRaw);
 
-  const url = `https://api.everbridge.net/managerapps/communications/v1/${encodeURIComponent(commId)}/stop`;
+  // ✅ removed "/stop"
+  const url = `https://api.everbridge.net/managerapps/communications/v1/${encodeURIComponent(commId)}`;
 
   const res = await fetch(url, {
     method: 'PATCH',
@@ -18,8 +19,8 @@ async function stopCommRequest(commIdRaw: string, accessToken: string) {
       Accept: 'application/json',
       'Content-Type': 'application/json',
     },
-    // ✅ send an empty JSON body to avoid 400s on strict PATCH handlers
-    body: JSON.stringify({ commId: commId }),
+    // ✅ send JSON body with active flag
+    body: JSON.stringify({ commId, active }),
   });
 
   const text = await res.text();
@@ -34,27 +35,28 @@ async function stopCommRequest(commIdRaw: string, accessToken: string) {
     : null;
 
   if (!res.ok) {
-    const err: any = new Error(typeof data === 'string' ? data : (data?.message ?? `Stop comm failed (${res.status})`));
+    const err: any = new Error(typeof data === 'string' ? data : (data?.message ?? `Update comm failed (${res.status})`));
     err.status = res.status;
     err.data = data;
     err.commIdSent = commId;
+    err.activeSent = active;
     throw err;
   }
 
-  // Some endpoints return no JSON; normalize success
   return data ?? { ok: true };
 }
 
-export function useStopComm(tokenResponse: any) {
+export function useSetCommActive(tokenResponse: any) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationKey: ['stopComm'],
-    mutationFn: async ({ commId }: StopCommArgs) => {
+    mutationKey: ['setCommActive'],
+    mutationFn: async ({ commId, active }: SetCommActiveArgs) => {
       const idToken = tokenResponse.data?.id_token;
       if (!idToken) throw new Error('Not authenticated (missing id_token)');
       if (!commId) throw new Error('Missing commId');
-      return stopCommRequest(commId, idToken);
+      if (typeof active !== 'boolean') throw new Error('Missing active boolean');
+      return setCommActiveRequest(commId, active, idToken);
     },
     onSuccess: async () => {
       try {
@@ -62,7 +64,7 @@ export function useStopComm(tokenResponse: any) {
           predicate: (q) => {
             try {
               const key = q.queryKey;
-              return Array.isArray(key) && key[0] === 'comm';
+              return Array.isArray(key) && key[0] === 'comms';
             } catch {
               return false;
             }

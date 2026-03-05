@@ -14,11 +14,18 @@ type Props = {
 };
 
 export default function Communications({ open, onOpenChange, isStandalone, isDev }: Props) {
-  if (isStandalone || isDev)
+  if (isStandalone)
+    return (
+      <>
+        <CommunicationsContent isDev={isDev} isStandalone={isStandalone} />
+      </>
+    );
+
+  if (isDev)
     return (
       <>
         <HeaderBar onClose={() => onOpenChange(false)} />
-        <CommunicationsContent isDev={isDev} />
+        <CommunicationsContent isDev={isDev} isStandalone={isStandalone} />
       </>
     );
 
@@ -30,7 +37,7 @@ export default function Communications({ open, onOpenChange, isStandalone, isDev
   );
 }
 
-function CommunicationsContent({ isDev }: { isDev?: boolean }) {
+function CommunicationsContent({ isDev, isStandalone }: { isDev?: boolean; isStandalone?: boolean }) {
   const { pushToast } = useToasts();
   const { permissions } = useValidPermissions();
   const tokenQuery = useEverbridgeToken({
@@ -48,6 +55,15 @@ function CommunicationsContent({ isDev }: { isDev?: boolean }) {
       });
     }
   }, [tokenQuery.isError, tokenQuery.error, pushToast]);
+
+  if (isStandalone)
+    <div className={`h-full bg-[linear-gradient(146deg,rgba(224,237,255,0.41)_26.27%,rgba(218,217,255,0.50)_37.44%,rgba(224,235,255,0.41)_61.17%,rgba(233,240,255,0.50)_84.9%)] relative w-full`}>
+      <div className="relative w-full h-full">
+        <div className="flex-1 min-h-0 space-y-4">
+          <CommsTabShell tokenResponse={tokenQuery} permissions={permissions} />
+        </div>
+      </div>
+    </div>;
 
   return (
     <div className={`h-full bg-[linear-gradient(146deg,rgba(224,237,255,0.41)_26.27%,rgba(218,217,255,0.50)_37.44%,rgba(224,235,255,0.41)_61.17%,rgba(233,240,255,0.50)_84.9%)] relative w-full p-10`}>

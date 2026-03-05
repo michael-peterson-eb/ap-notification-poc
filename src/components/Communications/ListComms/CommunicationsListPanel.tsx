@@ -1,6 +1,5 @@
 import { useMemo, useRef, useState, UIEvent, useEffect } from 'react';
 
-import { Section } from 'components';
 import { DataTable } from 'components/DataTable';
 import { useCommsList } from 'hooks/comms/list';
 import { params } from 'utils/consts';
@@ -11,6 +10,7 @@ import { SearchByNameInput } from './SearchByNameInput';
 const SCROLL_THRESHOLD_PX = 120;
 
 type ThreadStatus = 'ACTIVE' | 'INACTIVE';
+type TabKey = 'launch' | 'list' | 'settings';
 
 function getIsoStartOfDayFromDaysAgo(daysAgo: number): string {
   const d = new Date();
@@ -23,12 +23,14 @@ type Props = {
   tokenResponse: any;
   permissions?: string[];
   columns: any;
-  showListView: boolean; // left as-is (used for description total choice)
+  showListView: boolean;
+  onRowPress: (comm: any) => void;
+  setActiveTab: (tab: TabKey) => void;
 };
 
-const CommunicationsListPanel = ({ tokenResponse, permissions, columns }: Props) => {
+const CommunicationsListPanel = ({ tokenResponse, permissions, columns, onRowPress, setActiveTab }: Props) => {
   const [threadStatus, setThreadStatus] = useState<ThreadStatus>('ACTIVE');
-  const [fromDateStr, setFromDateStr] = useState<string>(() => getIsoStartOfDayFromDaysAgo(30));
+  const [fromDateStr, setFromDateStr] = useState<string>(() => getIsoStartOfDayFromDaysAgo(7));
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
 
@@ -56,7 +58,7 @@ const CommunicationsListPanel = ({ tokenResponse, permissions, columns }: Props)
     filters: apiFilters,
   }) as any;
 
-  const commsRows = (comms?.rows ?? []) as any[];
+  const commsRows = useMemo(() => comms?.rows, [comms?.rows]);
   const commsFetching = Boolean(comms?.isFetching);
   const hasMore = Boolean(comms?.hasMore);
   const loadMore = comms?.loadMore as undefined | (() => any);
@@ -122,7 +124,7 @@ const CommunicationsListPanel = ({ tokenResponse, permissions, columns }: Props)
   if (!permissions?.includes('bc.comms.list')) return null;
 
   return (
-    <>
+    <div className="min-h-[60vh]">
       <div className="mb-3 flex items-center justify-between gap-3 flex-nowrap">
         {/* Left */}
         <div className="flex items-center gap-2 flex-nowrap min-w-0">
@@ -143,6 +145,7 @@ const CommunicationsListPanel = ({ tokenResponse, permissions, columns }: Props)
         heightClassName="h-[440px]"
         onScroll={handleScroll}
         scrollRef={scrollRef}
+        onRowPress={onRowPress}
         footer={
           <>
             {commsFetching ? <div className="py-3 text-center text-xs text-zinc-500">Loading…</div> : null}
@@ -150,7 +153,7 @@ const CommunicationsListPanel = ({ tokenResponse, permissions, columns }: Props)
           </>
         }
       />
-    </>
+    </div>
   );
 };
 

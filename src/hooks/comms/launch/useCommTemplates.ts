@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { useMemo } from 'react';
+import { useDefaultTemplateCategory } from 'hooks/comms/launch/useDefaultTemplateCategory';
 
 export type CommTemplate = {
   id: string; // normalized ID used by UI
@@ -19,15 +20,11 @@ const TEMPLATES_BASE = 'https://api.everbridge.net/managerapps/communications/v1
 const TEMPLATES_LOOKUP = 'https://api.everbridge.net/managerapps/communications/v1/templates/lookup/';
 
 function normalizeTemplate(raw: any): CommTemplate {
-  return {
-    ...raw,
-  };
+  return { ...raw };
 }
 
 async function fetchCommTemplates(idToken: string, filters?: Record<string, any>) {
   const qs = new URLSearchParams();
-
-  // Hard-code pageSize = 100, ignore pagination for now
   qs.set('pageSize', '100');
 
   if (filters) {
@@ -41,10 +38,7 @@ async function fetchCommTemplates(idToken: string, filters?: Record<string, any>
 
   const resp = await fetch(url, {
     method: 'GET',
-    headers: {
-      accept: 'application/json',
-      Authorization: `Bearer ${idToken}`,
-    },
+    headers: { accept: 'application/json', Authorization: `Bearer ${idToken}` },
   });
 
   const text = await resp.text();
@@ -61,11 +55,9 @@ async function fetchCommTemplates(idToken: string, filters?: Record<string, any>
   if (!resp.ok) throw new Error(JSON.stringify({ status: resp.status, ...json }));
 
   const rows = Array.isArray(json) ? json : Array.isArray((json as any)?.data) ? (json as any).data : [];
-
   return rows.map(normalizeTemplate);
 }
 
-// NEW: lookup templates by IDs (CSV in bcicTemplateCategory)
 async function fetchCommTemplatesByIds(idToken: string, csv: string) {
   const ids = csv
     .split(',')
@@ -98,7 +90,6 @@ async function fetchCommTemplatesByIds(idToken: string, csv: string) {
   if (!resp.ok) throw new Error(JSON.stringify({ status: resp.status, ...json }));
 
   const rows = Array.isArray(json) ? json : Array.isArray((json as any)?.data) ? (json as any).data : [];
-
   return rows.map(normalizeTemplate);
 }
 
@@ -109,7 +100,7 @@ export function useCommTemplates(filters?: Record<string, any>, opts?: { enabled
 
   const hasPlanType = !!opts?.planType;
 
-  // --- 1) In prod, look up planCategory from planType ---
+  // 1) In prod, look up planCategory from planType
   const planCategoryQuery = useQuery({
     queryKey: ['planTemplateCategory', opts?.planType],
     enabled: baseEnabled && !isDev && hasPlanType,
@@ -117,60 +108,57 @@ export function useCommTemplates(filters?: Record<string, any>, opts?: { enabled
     queryFn: async () => {
       // @ts-expect-error - global _RB
       const rows = await _RB.selectQuery(['bcicTemplateCategory'], 'EA_SA_PlanType', `id = ${opts!.planType}`, 1, true);
-
       const first = Array.isArray(rows) ? rows[0] : rows?.data?.[0];
       const category = first?.bcicTemplateCategory;
-
-      // normalize empty/undefined to null
       return category ? String(category) : null;
     },
   });
 
   const planCategory = planCategoryQuery.data ?? null;
 
-  // --- 2) Effective filters ---
-  // Dev: just use filters (or none) and pull everything
-  // Prod: (NO LONGER USED for category filtering) keep as-is for minimal diff
-  const effectiveFilters = useMemo(() => {
-    if (isDev) return filters; // dev can be undefined -> pull all templates
-
-    // prod: only meaningful if we have a category
-    if (!planCategory) return undefined;
-
-    // NOTE: category is now a CSV of template IDs; do not add it to filters anymore
-    return filters;
-  }, [filters, isDev, planCategory]);
-
-  // --- 3) Template query enabled rules ---
-  const templatesEnabled =
-    baseEnabled &&
-    !!idToken &&
-    (isDev // dev: no planType/category required
-      ? true
-      : hasPlanType && !!planCategory); // prod: must have planType AND csv
-
-  const templatesQuery = useQuery({
-    queryKey: ['commTemplates', isDev ? 'dev' : opts?.planType, isDev ? effectiveFilters : planCategory],
-    enabled: templatesEnabled,
-    retry: 0,
-    queryFn: () => (isDev ? fetchCommTemplates(idToken!, effectiveFilters) : fetchCommTemplatesByIds(idToken!, planCategory!)),
+  // 1b) NEW: default category from settings (prod only)
+  const defaultCategoryQuery = useDefaultTemplateCategory({
+    enabled: baseEnabled && !isDev,
   });
 
-  // --- 4) Loading state rules ---
-  // If prod is missing planType or missing category, we should NOT appear to be loading forever.
-  const isLoading = opts?.token.isLoading || (!isDev && hasPlanType ? planCategoryQuery.isLoading : false) || templatesQuery.isLoading;
+  const defaultCsv = (defaultCategoryQuery.data?.csv ?? '').trim();
 
-  const isFetching = (!isDev && hasPlanType ? planCategoryQuery.isFetching : false) || templatesQuery.isFetching;
+  // 1c) NEW: choose plan category first, else default
+  const effectiveCsv = (planCategory ?? '').trim() || defaultCsv || null;
+  const usedDefault = !(planCategory ?? '').trim() && !!defaultCsv;
 
-  // Optional: provide a more explicit error when prod has planType but no category
-  const missingCategoryError = !isDev && hasPlanType && planCategoryQuery.isSuccess && !planCategory ? new Error('No template IDs configured for this plan type.') : null;
+  // 2) Effective filters (dev only)
+  const effectiveFilters = useMemo(() => {
+    if (isDev) return filters;
+    return filters;
+  }, [filters, isDev]);
+
+  // 3) Template query enabled rules
+  const templatesEnabled = baseEnabled && !!idToken && (isDev ? true : hasPlanType ? !!effectiveCsv : !!effectiveCsv);
+
+  const templatesQuery = useQuery({
+    queryKey: ['commTemplates', isDev ? 'dev' : (opts?.planType ?? 'no-plan'), isDev ? effectiveFilters : effectiveCsv],
+    enabled: templatesEnabled,
+    retry: 0,
+    queryFn: () => (isDev ? fetchCommTemplates(idToken!, effectiveFilters) : fetchCommTemplatesByIds(idToken!, effectiveCsv!)),
+  });
+
+  // 4) Loading/fetching
+  const isLoading = opts?.token.isLoading || (!isDev && hasPlanType ? planCategoryQuery.isLoading : false) || (!isDev ? defaultCategoryQuery.isLoading : false) || templatesQuery.isLoading;
+
+  const isFetching = (!isDev && hasPlanType ? planCategoryQuery.isFetching : false) || (!isDev ? defaultCategoryQuery.isFetching : false) || templatesQuery.isFetching;
+
+  // 5) Missing templates error (only once we know both lookups)
+  const missingCategoryError = !isDev && templatesQuery.isSuccess && !effectiveCsv ? new Error('No templates configured for this plan type and no default templates configured.') : null;
 
   return {
     query: templatesQuery,
     isLoading,
     isFetching,
-    error: opts?.token.error ?? planCategoryQuery.error ?? missingCategoryError ?? templatesQuery.error ?? null,
+    error: opts?.token.error ?? planCategoryQuery.error ?? defaultCategoryQuery.error ?? missingCategoryError ?? templatesQuery.error ?? null,
     rows: templatesQuery.data ?? [],
     planCategory,
+    effectiveCsv, // optional but handy
+    usedDefault, // optional but handy for UI messaging
   };
 }

@@ -1,9 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { ColumnDef } from '@tanstack/react-table';
 
-import { Button } from 'components/ui/button';
 import { params } from 'utils/consts';
-import { useStopComm } from 'hooks/comms/launch/useStopComm';
+import { useSetCommActive } from 'hooks/comms/launch/useStopComm';
 import getCommColumns from './ListComms/commColumns';
 import type { Comm } from 'hooks/comms/list/useComms';
 
@@ -25,6 +24,7 @@ const TabButton = ({ active, children, onClick }: { active: boolean; children: R
 const CommsTab = ({ tokenResponse, permissions }) => {
   const canLaunch = permissions?.includes('bc.comms.launch');
   const canList = permissions?.includes('bc.comms.list');
+  const showSettings = params?.showSettings;
 
   const isDev = process.env.NODE_ENV === 'development';
   const isStandalone = params.standaloneMode;
@@ -36,14 +36,10 @@ const CommsTab = ({ tokenResponse, permissions }) => {
 
   const [selected, setSelected] = useState<{ id: string; row?: Comm | null } | null>(null);
 
-  const stopComm = useStopComm(tokenResponse);
+  const stopComm = useSetCommActive(tokenResponse);
 
   const commColumns = useMemo<ColumnDef<Comm>[]>(() => {
-    return getCommColumns({
-      onSelect: (comm) => setSelected({ id: comm.id, row: comm }),
-      stopComm,
-      permissions,
-    });
+    return getCommColumns();
   }, [stopComm, permissions]);
 
   useEffect(() => {
@@ -51,20 +47,16 @@ const CommsTab = ({ tokenResponse, permissions }) => {
   }, [canLaunch]);
 
   if (selected) {
-    const isStopped = selected.row?.notificationStatus?.toLowerCase() === 'stopped' || selected.row?.notificationStatus === 'completed';
-
+    const setCommActive = (id, active) => stopComm.mutate({ commId: id, active: active === true ? false : true });
     return (
       <CommDetailView
         commId={selected.id}
         token={tokenResponse}
-        onBack={() => setSelected(null)}
-        right={
-          permissions?.includes('bc.comms.launch') && (
-            <Button variant="destructive" size="sm" disabled={stopComm.isPending || isStopped} onClick={() => stopComm.mutate({ commId: selected.id })}>
-              Stop
-            </Button>
-          )
-        }
+        onBack={() => {
+          setActiveTab('list');
+          setSelected(null);
+        }}
+        onCommActive={setCommActive}
       />
     );
   }
@@ -83,7 +75,7 @@ const CommsTab = ({ tokenResponse, permissions }) => {
               Communication List
             </TabButton>
           )}
-          {canLaunch && (
+          {canLaunch && showSettings && (
             <TabButton active={activeTab === 'settings'} onClick={() => setActiveTab('settings')}>
               Settings
             </TabButton>
@@ -92,9 +84,11 @@ const CommsTab = ({ tokenResponse, permissions }) => {
       </div>
 
       <div className="pt-6">
-        {activeTab === 'launch' && canLaunch ? <LaunchCommunicationPanel tokenResponse={tokenResponse} permissions={permissions} /> : null}
+        {activeTab === 'launch' && canLaunch ? <LaunchCommunicationPanel tokenResponse={tokenResponse} permissions={permissions} setActiveTab={setActiveTab} /> : null}
 
-        {activeTab === 'list' && canList ? <CommunicationsListPanel tokenResponse={tokenResponse} permissions={permissions} columns={commColumns} showListView={showListView} /> : null}
+        {activeTab === 'list' && canList ? (
+          <CommunicationsListPanel tokenResponse={tokenResponse} permissions={permissions} columns={commColumns} showListView={showListView} onRowPress={setSelected} setActiveTab={setActiveTab} />
+        ) : null}
 
         {activeTab === 'settings' && canLaunch ? (
           <CommsSettingsPanel

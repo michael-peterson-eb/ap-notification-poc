@@ -87,7 +87,7 @@ export function useCommRecipientLogs(req: CommRecipientLogsParams | null, opts: 
   const pageNumber = req?.pageNumber ?? 1;
 
   const query = useQuery({
-    queryKey: ['comm', req?.commId, 'recipient-logs', statusKey, pageSize, pageNumber],
+    queryKey: ['comms', req?.commId, 'recipient-logs', statusKey, pageSize, pageNumber],
     enabled,
     queryFn: () => fetchCommRecipientLogs({ req: req!, tokenResponse: opts.token }),
     staleTime: 15_000,

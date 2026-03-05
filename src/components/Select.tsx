@@ -184,7 +184,7 @@ export function Select({ children, isLoading, loadingText = 'Loading…', classN
   const displayLabel = selectedOption ? selectedOption.label : placeholderOption ? placeholderOption.label : '';
 
   // styling constants - tuned to your mock
-  const controlBase = 'w-full rounded bg-white border px-5 py-3 text-lg text-zinc-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-200 disabled:bg-zinc-50 disabled:text-zinc-400';
+  const controlBase = 'w-full rounded bg-white border px-3 py-1.5 text-lg text-zinc-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-200 disabled:bg-zinc-50 disabled:text-zinc-400';
 
   return (
     <div ref={containerRef} className={`relative ${className}`} {...(props as any)}>
@@ -204,7 +204,7 @@ export function Select({ children, isLoading, loadingText = 'Loading…', classN
             onClick={handleToggle}
             onKeyDown={handleButtonKeyDown}
             className={[controlBase, 'flex items-center justify-between', disabled ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer', 'border border-blue-200'].join(' ')}>
-            <span className={`truncate text-left ${selectedOption ? '' : 'text-zinc-400'}`}>{displayLabel}</span>
+            <span className={`text-base font-normal truncate text-left ${selectedOption ? '' : 'text-zinc-400'}`}>{displayLabel}</span>
 
             {/* caret */}
             <svg className={`h-4 w-4 text-zinc-700 ml-3 transition-transform duration-150 ${caretClass}`} viewBox="0 0 20 20" fill="currentColor" aria-hidden>
@@ -221,7 +221,7 @@ export function Select({ children, isLoading, loadingText = 'Loading…', classN
                 tabIndex={-1}
                 onKeyDown={handleMenuKeyDown}
                 style={menuStyle}>
-                <div className="bg-white rounded shadow-lg ring-1 ring-black ring-opacity-5 overflow-hidden" style={{ maxHeight: 320, overflow: 'auto' }}>
+                <div className="bg-white rounded shadow-lg ring-1 ring-black ring-opacity-5" style={{ maxHeight: 320, overflow: 'auto' }}>
                   {options.map((opt, idx) => {
                     const isHighlighted = highlightIndex === idx;
                     const isSelected = selectedValue === opt.value;
@@ -234,7 +234,7 @@ export function Select({ children, isLoading, loadingText = 'Loading…', classN
                         onClick={() => handleOptionClick(opt)}
                         onMouseEnter={() => setHighlightIndex(idx)}
                         className={[
-                          'px-4 py-3 cursor-pointer select-none flex items-center justify-between',
+                          'px-3 py-1.5 cursor-pointer select-none flex items-center justify-between',
                           opt.disabled ? 'opacity-40 cursor-not-allowed' : 'hover:bg-zinc-100',
                           isHighlighted ? 'bg-zinc-100' : '',
                           // selected style: blue background + white text

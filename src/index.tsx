@@ -8,6 +8,7 @@ import { params } from 'utils/consts';
 declare global {
   interface Window {
     __openCommunicationsModal?: () => void;
+    __closeCommunicationsModal?: () => void;
   }
 }
 

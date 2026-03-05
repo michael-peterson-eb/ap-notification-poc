@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 import Communications from 'pages/Communications';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ToastProvider } from 'hooks/useToasts';
-import HeaderBar from 'components/HeaderBar';
 
 const queryClient = new QueryClient();
 
@@ -12,8 +11,10 @@ export default function App({ isDev, isStandalone }: { isDev?: boolean; isStanda
   useEffect(() => {
     // DOM button calls this.
     window.__openCommunicationsModal = () => setOpen(true);
+    window.__closeCommunicationsModal = () => setOpen(false);
     return () => {
       delete window.__openCommunicationsModal;
+      delete window.__closeCommunicationsModal;
     };
   }, []);
 

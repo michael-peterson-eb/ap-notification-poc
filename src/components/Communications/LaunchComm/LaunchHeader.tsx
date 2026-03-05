@@ -133,7 +133,7 @@ export default function LaunchHeader({
                   onKeyDown={onTitleKeyDown}
                   role="textbox"
                   aria-label="Edit title"
-                  className="text-4xl font-semibold leading-tight rounded-md focus:outline-none px-1 py-0"
+                  className="text-3xl font-normal leading-tight rounded-md focus:outline-none py-0"
                 />
                 <button
                   type="button"
@@ -150,7 +150,7 @@ export default function LaunchHeader({
               </>
             ) : (
               <>
-                <h1 className="text-4xl font-semibold leading-tight">{title}</h1>
+                <h1 className="text-3xl font-normal leading-tight">{title}</h1>
                 <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={startEditTitle} aria-label="Edit title" title="Edit title" className="rounded p-1">
                   <Pencil className="w-4 h-4 text-zinc-700" />
                 </button>
@@ -161,6 +161,7 @@ export default function LaunchHeader({
           <div className="mt-2">
             {editingDescription ? (
               <textarea
+                placeholder="Enter a communication description"
                 ref={descTextareaRef}
                 value={descDraft}
                 onChange={(e) => setDescDraft(e.target.value)}
@@ -179,7 +180,7 @@ export default function LaunchHeader({
               />
             ) : (
               <p className="text-sm text-zinc-600 cursor-text" onClick={startEditDescription} title="Click to edit description">
-                {description}
+                {description || 'Enter a communication description'}
               </p>
             )}
           </div>

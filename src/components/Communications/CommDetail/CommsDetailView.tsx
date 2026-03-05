@@ -1,24 +1,24 @@
-import { useState, useEffect, useRef } from 'react';
-import { Button } from 'components/ui/button';
-import { Field, Section } from 'components';
-import { formatDate } from 'utils/format';
+import { useState, useEffect, useRef, useLayoutEffect } from 'react';
 import type { Comm } from 'hooks/comms/list/useComms';
 import { useCommsByIds } from 'hooks/comms/list/useCommsByIds';
 import { RecipientsPanel } from './RecipientsPanel';
-import { ActivitiesPanel } from './ActivitesPanel';
+import { ActivitiesPanel } from './ActivitiesPanel';
 import { useToasts } from 'hooks/useToasts';
+import Loader from 'components/Loader';
+import { CommInfoPanel } from './CommInfoPanel';
+import DetailHeaderBar from './DetailHeaderBar';
+import MessagePanel from './MessagePanel';
+import { RecipientDetailsPanel } from './RecipientDetailsPanel';
+import { useCommConfirmationStatus } from 'hooks/comms/details/useCommConfirmationStatus';
 
 type Props = {
   commId: string;
   token: any;
-
   onBack: () => void;
-
-  // Optional action buttons
-  right?: React.ReactNode;
+  onCommActive?: (id: string, active: boolean) => void;
 };
 
-export function CommDetailView({ commId, token, onBack, right }: Props) {
+export function CommDetailView({ commId, token, onBack, onCommActive }: Props) {
   const { pushToast } = useToasts();
   const [isRefreshing, setIsRefreshing] = useState(false);
 
@@ -26,11 +26,13 @@ export function CommDetailView({ commId, token, onBack, right }: Props) {
     enabled: !!commId,
     token,
   });
+  const confirmation = useCommConfirmationStatus(commId, { token, enabled: !!commId });
   const { error, refetch } = commQuery;
 
   const comm: Comm | null = commQuery.rows[0] ?? null;
 
-  const isLoading = commQuery.isLoading;
+  const isLoading = commQuery.isLoading || confirmation.isLoading;
+  const disabled = isLoading || isRefreshing;
 
   // avoid duplicate toasts for the same error object
   const lastErrorRef = useRef<any>(null);
@@ -75,43 +77,68 @@ export function CommDetailView({ commId, token, onBack, right }: Props) {
     }
   };
 
+  const leftRef = useRef<HTMLDivElement | null>(null);
+  const rightRef = useRef<HTMLDivElement | null>(null);
+  const [leftPx, setLeftPx] = useState(0);
+
+  useLayoutEffect(() => {
+    const right = rightRef.current;
+    const left = leftRef.current;
+
+    // if nodes not ready yet, wait — this effect will re-run when isLoading/commId changes
+    if (!right || !left) return;
+
+    const apply = (height?: number) => {
+      const h = typeof height === 'number' ? Math.round(height) : Math.round(right.getBoundingClientRect().height);
+      setLeftPx(h);
+    };
+
+    apply();
+
+    const ro = new ResizeObserver((entries) => {
+      const entry = entries[0];
+      if (!entry) return;
+      window.requestAnimationFrame(() => apply(entry.contentRect.height));
+    });
+    ro.observe(right);
+
+    return () => {
+      ro.disconnect();
+    };
+  }, [commId, isLoading]); // <-- important: re-run when loading finishes / comm changes
+
+  if (isLoading) {
+    return <Loader />;
+  }
+
   return (
-    <>
-      {isLoading ? (
-        <div className="text-sm text-zinc-600">Loading…</div>
-      ) : error ? (
-        <pre className="text-red-700 bg-red-50 ring-1 ring-red-200 p-3 rounded-xl overflow-auto text-xs">{JSON.stringify(error, null, 2)}</pre>
-      ) : comm ? (
-        <Section
-          title={comm.title ?? 'Communication'}
-          tone="blue"
-          description={comm.eventType ? `Event Type: ${comm.eventType}` : undefined}
-          left={
-            <Button variant="secondary" size="sm" onClick={onBack}>
-              ← Back
-            </Button>
-          }
-          right={right}
-          onRefresh={handleRefresh}
-          refreshing={isRefreshing}>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Field label="Status">{comm.status ?? '-'}</Field>
-            <Field label="Notification Status">{comm.notificationStatus ?? '-'}</Field>
-            <Field label="Created">{formatDate((comm as any).createdDate ?? comm.lastModifiedDate)}</Field>
-            <Field label="Last Modified">{formatDate(comm.lastModifiedDate)}</Field>
+    comm && (
+      <div className="min-h-[60vh]">
+        <DetailHeaderBar onBack={onBack} onCommActive={onCommActive} comm={comm} disabled={disabled} handleRefresh={handleRefresh} />
+        <div className="mb-8">
+          <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-3">
+            <div>
+              <div className="flex items-center gap-3">
+                <h1 className="text-3xl font-normal leading-tight m-0">{comm.title ?? 'Untitled'}</h1>
+              </div>
+              {comm.description ? <div className="mt-2 text-sm font-semibold">{comm.description}</div> : null}
+            </div>
           </div>
 
-          <div className="mt-4">
-            <RecipientsPanel commId={commId} token={token} />
+          <CommInfoPanel comm={comm} />
+        </div>
+        <div className="flex gap-6">
+          <div ref={leftRef} className="w-96 flex flex-col" style={{ maxHeight: `${leftPx}px` }}>
+            <ActivitiesPanel confirmation={confirmation} commId={commId} comm={comm} token={token} />
           </div>
 
-          <div className="mt-4">
-            <ActivitiesPanel commId={commId} token={token} />
+          <div ref={rightRef} className="flex-1 flex flex-col gap-8">
+            <RecipientsPanel confirmation={confirmation} />
+            <MessagePanel comm={comm} token={token} />
           </div>
-        </Section>
-      ) : (
-        <div className="text-sm text-zinc-600">Not found.</div>
-      )}
-    </>
+        </div>
+        <RecipientDetailsPanel commId={commId} token={token} />
+      </div>
+    )
   );
 }

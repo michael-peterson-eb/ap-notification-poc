@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { useInfiniteQuery } from '@tanstack/react-query';
 
 export type Comm = {
-  id: string;
+  commId: string;
   title?: string;
   eventType?: string;
   status?: string;

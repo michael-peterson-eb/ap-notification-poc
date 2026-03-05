@@ -9,6 +9,7 @@ type Params = {
   };
   listUsers: string[];
   launchUsers: string[];
+  showSettings?: boolean;
 };
 
 // Mock params for development
@@ -28,6 +29,7 @@ export const mockParams: Params = {
   },
   listUsers: ['administrator', 'ea_businessadmin', 'ea_itadmin', 'ea_subadmin', 'ea_admin', 'ea_bcplaneditor', 'ea_itplaneditor', 'ea_businessuser', 'ea_ituser'],
   launchUsers: ['administrator', 'ea_businessadmin', 'ea_itadmin', 'ea_subadmin', 'ea_admin', 'ea_bcplaneditor', 'ea_itplaneditor'],
+  showSettings: true,
 };
 
 function getParamsFromDom(): Params | null {

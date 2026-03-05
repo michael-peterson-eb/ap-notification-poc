@@ -44,7 +44,7 @@ export function useCommConfirmationStatus(commId: string | null, opts: Options) 
   const enabled = !!commId && (opts.enabled ?? true);
 
   const query = useQuery({
-    queryKey: ['comm', commId, 'summary', 'confirmation-status'],
+    queryKey: ['comms', commId, 'summary', 'confirmation-status'],
     enabled,
     queryFn: () => fetchCommConfirmationStatus({ commId: commId!, tokenResponse: opts.token }),
     staleTime: 15_000,

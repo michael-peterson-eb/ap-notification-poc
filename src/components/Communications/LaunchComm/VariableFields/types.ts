@@ -37,6 +37,7 @@ export type VariableFieldsProps = {
   tokenResponse: any;
   selections?: SelectionOption[];
   disabled?: boolean;
+  onVariablesChange?: (values: Record<string, any>) => void;
 };
 
 export type VariableFieldsHandle = {

@@ -1,7 +1,6 @@
 import React, { forwardRef, useEffect, useMemo, useState, useImperativeHandle } from 'react';
 import { VariableCard } from './VariableCard';
 import { VariableControl } from './VariableControl';
-import { WhatYoureSending, SendingRow } from './WhatYoureSending';
 import type { CommVariableDef, TemplateVariable, VariableFieldsProps, VariableFieldsHandle } from './types';
 import {
   deriveVariableType,
@@ -27,7 +26,7 @@ import { useCommVariables } from 'hooks/comms/launch/useCommVariables';
 import { useValidateCommVariables } from 'hooks/comms/launch/useValidateCommVariables';
 import Loader from 'components/Loader';
 
-const VariableFields = forwardRef<VariableFieldsHandle, VariableFieldsProps>(({ templateVariables, templateId, tokenResponse, selections, disabled }, ref) => {
+const VariableFields = forwardRef<VariableFieldsHandle, VariableFieldsProps>(({ templateVariables, templateId, tokenResponse, selections, disabled, onVariablesChange }, ref) => {
   // Hooks
   const defsQuery = useCommVariables({
     tokenResponse,
@@ -47,16 +46,6 @@ const VariableFields = forwardRef<VariableFieldsHandle, VariableFieldsProps>(({ 
   // Derived
   const allVars = useMemo<TemplateVariable[]>(() => (Array.isArray(templateVariables) ? templateVariables : []), [templateVariables]);
   const hasVars = allVars.length > 0;
-  const sendingRows: SendingRow[] = useMemo(() => {
-    return allVars.map((v) => {
-      const id = String(v.variableId);
-      const def = defsById[id];
-      const label = getLabelFor(id, def);
-      const raw = values[id] ?? v.value ?? '';
-      const val = Array.isArray(raw) ? raw.join(', ') : String(raw ?? '');
-      return { vid: id, label, val: val.trim(), required: Boolean(v.required), hasValue: isMeaningfullyFilled(val) };
-    });
-  }, [allVars, defsById, values]);
 
   // Helpers
   const requiredMessages = (): string[] => {
@@ -139,6 +128,7 @@ const VariableFields = forwardRef<VariableFieldsHandle, VariableFieldsProps>(({ 
         return { ok: false, messages: [e?.message ?? 'Variable validation failed.'] };
       }
     },
+    getValues: () => ({ ...values }),
   }));
 
   // Lifecycle
@@ -159,6 +149,14 @@ const VariableFields = forwardRef<VariableFieldsHandle, VariableFieldsProps>(({ 
       return next;
     });
   }, [hasVars, allVars]);
+
+  React.useEffect(() => {
+    try {
+      if (typeof onVariablesChange === 'function') onVariablesChange(values);
+    } catch (e) {
+      // swallow — don't want preview to crash the whole form
+    }
+  }, [values, onVariablesChange]);
 
   if (!hasVars) return null;
 
