@@ -16,17 +16,11 @@ export default function MessagePanel({ comm, token, variables = [], valuesById =
         <span className="text-xl font-normal text-[#13151C]">Message</span>
       </div>
 
-      <div className="p-6">
-        {isLoading && <div className="text-sm text-zinc-600">Loading message content…</div>}
-        {error && <div className="text-sm text-red-600">Error loading content: {String(error.message)}</div>}
-        {!isLoading && !error && contents.length === 0 && <div className="text-sm text-zinc-500">No message content available</div>}
+      {isLoading && <div className="text-sm text-zinc-600">Loading message content…</div>}
+      {error && <div className="text-sm text-red-600">Error loading content: {String(error.message)}</div>}
+      {!isLoading && !error && contents.length === 0 && <div className="text-sm text-zinc-500">No message content available</div>}
 
-        {!isLoading && !error && contents.length > 0 && (
-          <div className="mt-4">
-            <PreviewMessages contents={contents} variables={variables} valuesById={valuesById} />
-          </div>
-        )}
-      </div>
+      {!isLoading && !error && contents.length > 0 && <PreviewMessages contents={contents} variables={variables} valuesById={valuesById} />}
     </div>
   );
 }

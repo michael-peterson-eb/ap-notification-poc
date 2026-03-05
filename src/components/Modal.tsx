@@ -58,7 +58,7 @@ export function Modal({ open, onClose, title, children, closeOnBackdrop = true, 
 
   const panelStyle: React.CSSProperties = {
     opacity: shown ? 1 : 0,
-    transform: shown ? 'translateY(0px) scale(1) translateX(144px)' : 'translateY(10px) scale(0.98)',
+    transform: shown ? 'translateY(0px) scale(1) translateX(0px)' : 'translateY(30px) scale(0.8)',
     transition: `opacity ${transitionMs}ms ease, transform ${transitionMs}ms ease`,
   };
 

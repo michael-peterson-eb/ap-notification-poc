@@ -153,9 +153,7 @@ const VariableFields = forwardRef<VariableFieldsHandle, VariableFieldsProps>(({ 
   React.useEffect(() => {
     try {
       if (typeof onVariablesChange === 'function') onVariablesChange(values);
-    } catch (e) {
-      // swallow — don't want preview to crash the whole form
-    }
+    } catch (e) {}
   }, [values, onVariablesChange]);
 
   if (!hasVars) return null;
@@ -165,7 +163,7 @@ const VariableFields = forwardRef<VariableFieldsHandle, VariableFieldsProps>(({ 
   }
 
   return (
-    <div className="mt-2 flex flex-col gap-3">
+    <div className="flex flex-col">
       {allVars.map((v, index) => {
         const id = String(v.variableId);
         const def = defsById[id];

@@ -89,14 +89,14 @@ export default function LaunchActionBar({ disabled, isConfirming, subtitle, onCa
               variant="outline"
               onClick={onCancel}
               disabled={disabled}
-              className="rounded-full px-6 py-3 text-sm font-bold text-[#1A5CD7] hover:text-[#1A5CD7] border-[#1D64E866] bg-[radial-gradient(281.64%_61.17%_at_103.88%_50%,rgba(23,229,205,0.04)_0%,rgba(64,195,203,0)_72.4%),radial-gradient(68.74%_76.79%_at_100%_90.63%,rgba(61,122,235,0.20)_0%,rgba(61,122,235,0)_100%)]">
+              className="active:scale-[0.95] active:opacity-80 transition-all rounded-full px-6 py-3 text-sm font-bold text-[#1A5CD7] hover:text-[#1A5CD7] border-[#1D64E866] bg-[radial-gradient(281.64%_61.17%_at_103.88%_50%,rgba(23,229,205,0.04)_0%,rgba(64,195,203,0)_72.4%),radial-gradient(68.74%_76.79%_at_100%_90.63%,rgba(61,122,235,0.20)_0%,rgba(61,122,235,0)_100%)]">
               Cancel
             </Button>
 
             <Button
               onClick={onStartLaunch}
               disabled={disabled}
-              className="rounded-full px-6 py-3 text-sm font-bold text-white bg-[radial-gradient(108.98%_88.6%_at_1.38%_64.58%,rgba(223,233,252,0.11)_0%,rgba(236,242,253,0)_100%),linear-gradient(268deg,#1982AF_-3.23%,#1B5DD8_20.93%,#1547A6_102.21%)] border border-[rgba(255,255,255,0.32)]">
+              className="active:scale-[0.95] active:opacity-80 transition-all  rounded-full px-6 py-3 text-sm font-bold text-white bg-[radial-gradient(108.98%_88.6%_at_1.38%_64.58%,rgba(223,233,252,0.11)_0%,rgba(236,242,253,0)_100%),linear-gradient(268deg,#1982AF_-3.23%,#1B5DD8_20.93%,#1547A6_102.21%)] border border-[rgba(255,255,255,0.32)]">
               <Send className="mr-2 h-4 w-4" />
               Launch Communication
             </Button>
@@ -107,7 +107,7 @@ export default function LaunchActionBar({ disabled, isConfirming, subtitle, onCa
               variant="outline"
               onClick={onStopLaunch}
               disabled={disabled}
-              className="rounded-full px-6 text-sm font-bold text-[#1A5CD7] hover:text-[#1A5CD7] border-[#1D64E866] bg-[radial-gradient(281.64%_61.17%_at_103.88%_50%,rgba(23,229,205,0.04)_0%,rgba(64,195,203,0)_72.4%),radial-gradient(68.74%_76.79%_at_100%_90.63%,rgba(61,122,235,0.20)_0%,rgba(61,122,235,0)_100%)]">
+              className="active:scale-[0.95] active:opacity-80 transition-all rounded-full px-6 text-sm font-bold text-[#1A5CD7] hover:text-[#1A5CD7] border-[#1D64E866] bg-[radial-gradient(281.64%_61.17%_at_103.88%_50%,rgba(23,229,205,0.04)_0%,rgba(64,195,203,0)_72.4%),radial-gradient(68.74%_76.79%_at_100%_90.63%,rgba(61,122,235,0.20)_0%,rgba(61,122,235,0)_100%)]">
               Stop Launch
             </Button>
 
@@ -124,7 +124,7 @@ export default function LaunchActionBar({ disabled, isConfirming, subtitle, onCa
             <Button
               onClick={onLaunchImmediately}
               disabled={disabled}
-              className="rounded-full px-6 py-3 text-sm font-bold text-white bg-[radial-gradient(108.98%_88.6%_at_1.38%_64.58%,rgba(223,233,252,0.11)_0%,rgba(236,242,253,0)_100%),linear-gradient(268deg,#1982AF_-3.23%,#1B5DD8_20.93%,#1547A6_102.21%)] border border-[rgba(255,255,255,0.32)]">
+              className="active:scale-[0.95] active:opacity-80 transition-all rounded-full px-6 py-3 text-sm font-bold text-white bg-[radial-gradient(108.98%_88.6%_at_1.38%_64.58%,rgba(223,233,252,0.11)_0%,rgba(236,242,253,0)_100%),linear-gradient(268deg,#1982AF_-3.23%,#1B5DD8_20.93%,#1547A6_102.21%)] border border-[rgba(255,255,255,0.32)]">
               <Send className="mr-2 h-4 w-4" />
               Launch Immediately
             </Button>

@@ -111,7 +111,7 @@ export const VariableControl: React.FC<Props> = ({
         value={textValue}
         onChange={(e) => onTextChange(e.target.value)}
         disabled={disabled}
-        className="w-full rounded-xl bg-white ring-1 ring-zinc-200 px-3 py-2 text-sm disabled:bg-zinc-50 disabled:text-zinc-500"
+        className="block w-full rounded text-[#405172] font-normal bg-white ring-1 ring-zinc-200 !px-3 !py-2.5 border !border-[#76A5FF] text-sm disabled:bg-zinc-50 disabled:text-zinc-500"
       />
     );
   }
@@ -123,26 +123,31 @@ export const VariableControl: React.FC<Props> = ({
         type="datetime-local"
         value={datetimeValue}
         onChange={(e) => onTextChange(e.target.value)}
+        onClick={(e) => {
+          (e.currentTarget as HTMLInputElement).showPicker?.();
+        }}
         disabled={disabled}
-        className="w-full rounded-xl bg-white ring-1 ring-zinc-200 px-3 py-2 text-sm disabled:bg-zinc-50 disabled:text-zinc-500"
+        className="w-full rounded text-[#405172] font-normal bg-white ring-1 ring-zinc-200 !px-3 !py-2.5 border !border-[#76A5FF] text-sm disabled:bg-zinc-50 disabled:text-zinc-500"
       />
     ) : (
       <input
         type="date"
         value={dateValue}
         onChange={(e) => onTextChange(e.target.value)}
+        onClick={(e) => {
+          (e.currentTarget as HTMLInputElement).showPicker?.();
+        }}
         disabled={disabled}
-        className="w-full rounded-xl bg-white ring-1 ring-zinc-200 px-3 py-2 text-sm disabled:bg-zinc-50 disabled:text-zinc-500"
+        className="w-full rounded text-[#405172] font-normal bg-white ring-1 ring-zinc-200 !px-3 !py-2.5 border !border-[#76A5FF] text-sm disabled:bg-zinc-50 disabled:text-zinc-500"
       />
     );
   }
 
-  // ---------- Textbox with optional "Use list" (2-column layout) ----------
   if (type === 'textbox' && canTextboxUseSelect) {
     return (
       <div className="flex flex-col gap-2">
-        <label className="flex items-center gap-2 text-xs text-zinc-600 select-none">
-          <Checkbox checked={textboxAsSelect} onCheckedChange={(checked) => setTextboxAsSelect(checked === true)} disabled={disabled} />
+        <label className="flex items-center gap-2 select-none text-[#405172] text-sm font-normal">
+          <Checkbox className="accent-red-300 border-[#005EF9]" checked={textboxAsSelect} onCheckedChange={(checked) => setTextboxAsSelect(checked === true)} disabled={disabled} />
           Use plan values
         </label>
 
@@ -160,7 +165,7 @@ export const VariableControl: React.FC<Props> = ({
 
             {/* Column 2: show actual value being sent */}
             <input
-              className="w-full rounded-xl bg-zinc-50 ring-1 ring-zinc-200 px-3 py-2 text-sm text-zinc-700"
+              className="hover:cursor-not-allowed w-full rounded bg-zinc-50 ring-1 ring-zinc-200 px-3 py-2 text-sm text-zinc-700"
               value={selectedTextboxOption?.value ?? textValue ?? ''}
               disabled
               readOnly
@@ -169,7 +174,7 @@ export const VariableControl: React.FC<Props> = ({
           </div>
         ) : (
           <input
-            className="w-full rounded-xl bg-white ring-1 ring-zinc-200 px-3 py-2 text-sm disabled:bg-zinc-50 disabled:text-zinc-500"
+            className="w-full rounded text-[#617396] font-normal bg-white ring-1 ring-zinc-200 !px-3 !py-2.5 border !border-[#76A5FF] text-sm disabled:bg-zinc-50 disabled:text-zinc-500"
             maxLength={maxLength}
             value={textValue}
             onChange={(e) => onTextChange(e.target.value)}
@@ -183,7 +188,7 @@ export const VariableControl: React.FC<Props> = ({
   // ---------- Textbox fallback ----------
   return (
     <input
-      className="w-full rounded-xl bg-white ring-1 ring-zinc-200 px-3 py-2 text-sm disabled:bg-zinc-50 disabled:text-zinc-500"
+      className="w-full rounded text-[#617396] font-normal bg-white ring-1 ring-zinc-200 !px-3 !py-2.5 border !border-[#76A5FF] text-sm disabled:bg-zinc-50 disabled:text-zinc-500"
       maxLength={maxLength}
       value={textValue}
       onChange={(e) => onTextChange(e.target.value)}

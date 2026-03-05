@@ -16,9 +16,9 @@ export const VariableCard: React.FC<Props> = ({ label, hint, varIndex, required,
 
   return (
     <>
-      <div className="flex items-start justify-between gap-3">
+      <div className="flex items-start mt-8">
         <div className="min-w-0">
-          <div className="font-medium text-zinc-900 truncate text-base">
+          <div className="font-normal text-black truncate text-sm">
             {varIndex + 1}. {label}
           </div>
           {hint ? <div className="text-xs text-zinc-500 mt-1">{hint}</div> : null}
@@ -27,14 +27,14 @@ export const VariableCard: React.FC<Props> = ({ label, hint, varIndex, required,
         <div className="flex items-center gap-2 shrink-0">{required ? <span className="text-[11px] px-2 py-1 rounded-full bg-red-50 text-red-700 ring-1 ring-red-200">Required</span> : null}</div>
       </div>
 
-      <div className="mt-3">{children}</div>
+      <div className="mt-2">{children}</div>
 
-      {showFooter ? (
+      {/* {showFooter ? (
         <div className="mt-2 flex items-center justify-between text-xs text-zinc-500">
           <div>{footerLeft ?? <span />}</div>
           <div>{footerRight ?? <span />}</div>
         </div>
-      ) : null}
+      ) : null} */}
     </>
   );
 };

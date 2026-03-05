@@ -37,6 +37,5 @@ export function useCommsList({ token, planId, pageSize = 10, filters }: UseComms
     resetKey,
   });
 
-  // ✅ Return the correct view; this is NOT a hooks violation (plain conditional return)
   return useListApi ? listResult : byIdsResult;
 }

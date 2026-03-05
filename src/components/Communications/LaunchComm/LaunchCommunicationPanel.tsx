@@ -9,6 +9,7 @@ import EventAndTemplateCard from './EventTemplateCard';
 import { PreviewMessages } from './VariableFields/PreviewMessage';
 import { useCommVariables } from 'hooks/comms/launch/useCommVariables';
 import LaunchActionBar from './LaunchActionBar';
+import Card from 'components/Card';
 
 type Mode = 'LIVE' | 'SIMULATION' | 'PREVIEW';
 
@@ -219,7 +220,9 @@ const LaunchCommunicationPanel = ({ tokenResponse, permissions, setActiveTab }) 
         ) : null}
 
         {hasTemplate ? (
-          <PreviewMessages contents={templateDetail?.message?.contents ?? []} variables={variableDefs} valuesById={mergedValuesById} defaultOpen={{ Email: true, SMS: false, Voice: false }} />
+          <Card>
+            <PreviewMessages contents={templateDetail?.message?.contents ?? []} variables={variableDefs} valuesById={mergedValuesById} defaultOpen={{ Email: true, SMS: false, Voice: false }} />
+          </Card>
         ) : null}
       </div>
 
@@ -230,7 +233,7 @@ const LaunchCommunicationPanel = ({ tokenResponse, permissions, setActiveTab }) 
           subtitle="Gathering recipients" // optional: you can pass "Gathering 15 Recipients" if you wire the count up
           onCancel={() => {
             if (isDev || isStandalone) {
-               resetLaunch();
+              resetLaunch();
             } else {
               window.__closeCommunicationsModal?.();
             }

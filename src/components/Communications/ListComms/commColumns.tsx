@@ -1,14 +1,8 @@
 import React from 'react';
 import type { ColumnDef } from '@tanstack/react-table';
-import { Button } from '../../ui/button';
 import type { Comm } from '../../../hooks/comms/list/useComms';
-import { type Permission } from 'utils/permissions';
 import { cn } from 'lib/utils';
 
-type StopCommShape = {
-  isPending?: boolean;
-  mutate: (args: { commId: string }) => void;
-};
 
 export function formatRelative(dateIso: any) {
   const d = new Date(dateIso);

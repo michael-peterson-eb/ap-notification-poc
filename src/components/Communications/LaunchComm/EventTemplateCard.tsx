@@ -58,7 +58,7 @@ const EventAndTemplateCard = React.forwardRef(function EventAndTemplateCard(
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Field label="Select Event Type">
+          {/* <Field label="Select Event Type"> */}
             <Select
               value={eventType}
               onChange={(e) => setEventType(e.target.value)}
@@ -72,9 +72,9 @@ const EventAndTemplateCard = React.forwardRef(function EventAndTemplateCard(
                 </option>
               ))}
             </Select>
-          </Field>
+          {/* </Field> */}
 
-          <Field label="Select A Template">
+          {/* <Field label="Select A Template"> */}
             <Select
               value={templateId}
               onChange={(e) => setTemplateId(e.target.value)}
@@ -88,7 +88,7 @@ const EventAndTemplateCard = React.forwardRef(function EventAndTemplateCard(
                 </option>
               ))}
             </Select>
-          </Field>
+          {/* </Field> */}
         </div>
 
         {hasTemplate && templateVars.length > 0 && (
@@ -115,7 +115,7 @@ const EventAndTemplateCard = React.forwardRef(function EventAndTemplateCard(
               </div>
             </div>
 
-            <div className="bg-white px-6 py-6">
+            <div className="bg-white px-6 pb-6">
               <VariableFields
                 ref={variableFieldsRef}
                 templateVariables={templateVars}

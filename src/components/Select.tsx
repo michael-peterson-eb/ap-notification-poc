@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { RotateCw } from 'lucide-react';
+import { RotateCw, Triangle } from 'lucide-react';
 
 type SelectProps = React.SelectHTMLAttributes<HTMLSelectElement> & {
   isLoading?: boolean;
@@ -178,20 +178,20 @@ export function Select({ children, isLoading, loadingText = 'Loading…', classN
   };
 
   // caret rotation class (use transform-gpu + origin-center to avoid weird 3D flips)
-  const caretClass = open ? 'rotate-180 transform-gpu origin-center' : 'transform-gpu origin-center';
+  const caretClass = open ? 'rotate-180 transform-gpu' : 'transform-gpu';
 
   // render selected label: if selected is placeholder (value === ''), show placeholderOption label styled lighter
   const displayLabel = selectedOption ? selectedOption.label : placeholderOption ? placeholderOption.label : '';
 
   // styling constants - tuned to your mock
-  const controlBase = 'w-full rounded bg-white border px-3 py-1.5 text-lg text-zinc-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-200 disabled:bg-zinc-50 disabled:text-zinc-400';
+  const controlBase = 'w-full rounded bg-white border px-3 py-2.5 text-lg text-zinc-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-200 disabled:bg-zinc-50 disabled:text-zinc-400';
 
   return (
     <div ref={containerRef} className={`relative ${className}`} {...(props as any)}>
       {isLoading ? (
-        <div aria-busy="true" className={[controlBase, 'flex items-center gap-3 cursor-not-allowed select-none', 'border border-blue-200 text-zinc-500'].join(' ')}>
-          <RotateCw className="h-5 w-5 animate-spin text-zinc-400" />
-          <span className="text-sm">{loadingText}</span>
+        <div aria-busy="true" className={[controlBase, 'flex items-center gap-2 cursor-not-allowed select-none', 'border !border-[#76A5FF] text-zinc-500'].join(' ')}>
+          <RotateCw className="animate-spin" color="#405172" size={14} />
+          <span className="text-sm font-normal text-[#405172]">{loadingText}</span>
         </div>
       ) : (
         <>
@@ -203,13 +203,13 @@ export function Select({ children, isLoading, loadingText = 'Loading…', classN
             disabled={disabled}
             onClick={handleToggle}
             onKeyDown={handleButtonKeyDown}
-            className={[controlBase, 'flex items-center justify-between', disabled ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer', 'border border-blue-200'].join(' ')}>
-            <span className={`text-base font-normal truncate text-left ${selectedOption ? '' : 'text-zinc-400'}`}>{displayLabel}</span>
+            className={[controlBase, 'flex items-center justify-between', disabled ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer', 'border !border-[#76A5FF]'].join(' ')}>
+            <span className={`text-base text-[#405172] font-normal truncate text-left ${selectedOption ? '' : 'text-zinc-400'}`}>{displayLabel}</span>
 
             {/* caret */}
-            <svg className={`h-4 w-4 text-zinc-700 ml-3 transition-transform duration-150 ${caretClass}`} viewBox="0 0 20 20" fill="currentColor" aria-hidden>
-              <path d="M7 10L12 15L17 10H7Z" />
-            </svg>
+            <div className={`inline-block transition-transform duration-150 ${caretClass}`}>
+              <Triangle size={6} fill="#405172" />
+            </div>
           </button>
 
           {open &&
@@ -234,14 +234,14 @@ export function Select({ children, isLoading, loadingText = 'Loading…', classN
                         onClick={() => handleOptionClick(opt)}
                         onMouseEnter={() => setHighlightIndex(idx)}
                         className={[
-                          'px-3 py-1.5 cursor-pointer select-none flex items-center justify-between',
+                          'px-3 py-2.5 cursor-pointer select-none flex items-center justify-between',
                           opt.disabled ? 'opacity-40 cursor-not-allowed' : 'hover:bg-zinc-100',
                           isHighlighted ? 'bg-zinc-100' : '',
                           // selected style: blue background + white text
                           isSelected ? 'bg-blue-100 text-black' : '',
                         ].join(' ')}
                         style={{ userSelect: 'none' }}>
-                        <span className={opt.disabled ? 'text-zinc-100' : isSelected ? 'text-black' : 'text-zinc-900'}>{opt.label}</span>
+                        <span className={opt.disabled ? 'text-zinc-100' : 'text-[#405172]'}>{opt.label}</span>
                       </div>
                     );
                   })}

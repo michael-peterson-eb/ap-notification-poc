@@ -11,7 +11,7 @@ type Props = {
 
 export const MultiSelectToggle: React.FC<Props> = ({ options, value, disabled, onChange }) => {
   return (
-    <div className="rounded bg-white ring-1 ring-blue-200 p-2 focus:outline-none focus:ring-2 focus:ring-blue-300 disabled:bg-zinc-50 disabled:text-zinc-400" >
+    <div className="rounded bg-white p-2 focus:outline-none !border-[#76A5FF] border disabled:bg-zinc-50 disabled:text-zinc-400">
       {/* Selected pills */}
       {value.length ? (
         <div className="flex flex-wrap gap-2 mb-2">
@@ -19,7 +19,7 @@ export const MultiSelectToggle: React.FC<Props> = ({ options, value, disabled, o
             <button
               key={val}
               type="button"
-              className="text-xs px-2 py-1 rounded-full bg-zinc-50 ring-1 ring-zinc-200 hover:bg-zinc-100 disabled:opacity-60"
+              className="items-center rounded-full bg-[#E8ECFF] px-3 py-1 text-base font-normal text-[#405172] disabled:opacity-60"
               disabled={disabled}
               onClick={() => onChange(value.filter((v) => v !== val))}
               title="Remove">
@@ -55,7 +55,7 @@ export const MultiSelectToggle: React.FC<Props> = ({ options, value, disabled, o
                   if (next === false && checked) onChange(value.filter((v) => v !== opt.value));
                 }}
               />
-              <span className="select-none">{opt.label}</span>
+              <span className="select-none text-[#405172] text-base font-normal">{opt.label}</span>
             </div>
           );
         })}

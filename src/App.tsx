@@ -18,6 +18,23 @@ export default function App({ isDev, isStandalone }: { isDev?: boolean; isStanda
     };
   }, []);
 
+  useEffect(() => {
+  const style = document.createElement('style');
+  style.innerHTML = `
+    .rbs-pageTool {
+      z-index: 1 !important;
+    }
+    .rbs-sidebar {
+      z-index: 1 !important;
+    } 
+  `;
+  document.head.appendChild(style);
+
+  return () => {
+    document.head.removeChild(style);
+  };
+}, []);
+
   return (
     <QueryClientProvider client={queryClient}>
       <ToastProvider>

@@ -99,7 +99,7 @@ export function PreviewMessages({ contents, variables, valuesById, defaultOpen, 
   if (!contents?.length) return null;
 
   return (
-    <Card className="p-6">
+    <div className="p-6">
       <div className="text-[22px] font-medium text-[#13151C] mb-4">Preview the Message</div>
 
       {Array.from(grouped.entries()).map(([label, items]) => {
@@ -142,6 +142,6 @@ export function PreviewMessages({ contents, variables, valuesById, defaultOpen, 
           </div>
         );
       })}
-    </Card>
+    </div>
   );
 }

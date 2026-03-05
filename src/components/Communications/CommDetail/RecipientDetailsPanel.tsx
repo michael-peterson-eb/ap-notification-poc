@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect, useRef, UIEvent } from 'react';
 import type { ColumnDef } from '@tanstack/react-table';
 import { UserCircle } from 'lucide-react';
 
@@ -10,6 +10,7 @@ import { useCommConfirmationStatus } from 'hooks/comms/details/useCommConfirmati
 import { useCommRecipientLogs, CommRecipientLog } from 'hooks/comms/details/useCommRecipientLogs';
 
 const DEFAULT_STATUSES = ['Confirmed', 'ConfirmedLate', 'Attempted', 'Duplicate', 'Unreachable'];
+const SCROLL_THRESHOLD_PX = 120;
 
 type Props = {
   commId: string;
@@ -24,10 +25,14 @@ export function RecipientDetailsPanel({ commId, token, statuses = DEFAULT_STATUS
   const [pageNumber, setPageNumber] = useState(1);
   const [pageSize] = useState(defaultPageSize);
 
-  // reset page when comm changes
+  // reset page when comm changes or statuses change
   useEffect(() => {
     setPageNumber(1);
-  }, [commId]);
+  }, [commId, JSON.stringify(statuses)]);
+
+  // scrolling refs (same pattern as CommunicationsListPanel)
+  const scrollRef = useRef<HTMLDivElement | null>(null);
+  const loadingMoreRef = useRef(false);
 
   // --- Summary (pie) ---
   const confirmation = useCommConfirmationStatus(commId, { token, enabled: !!commId });
@@ -37,7 +42,6 @@ export function RecipientDetailsPanel({ commId, token, statuses = DEFAULT_STATUS
     if (!d) return [];
 
     // Map API fields to status buckets
-    // NOTE: pendingConfirmedCount is treated as "Attempted" in your earlier flow; adjust if you later add a dedicated "Pending" status
     const items = [
       { key: 'Confirmed', value: d.confirmedCount },
       { key: 'Attempted', value: d.pendingConfirmedCount },
@@ -64,6 +68,38 @@ export function RecipientDetailsPanel({ commId, token, statuses = DEFAULT_STATUS
       : null,
     { token, enabled: !!commId }
   );
+
+  // convenience flags (naming aligned with CommunicationsListPanel)
+  const hasMore = Boolean(recipientLogs.hasNextPage);
+  const isFetching = Boolean(recipientLogs.isFetching);
+  const rows = recipientLogs.rows;
+
+  // Clear loadingMoreRef when filters/comm change or when fetch completes
+  useEffect(() => {
+    loadingMoreRef.current = false;
+  }, [commId, JSON.stringify(statuses), pageNumber]);
+
+  useEffect(() => {
+    // whenever fetching finishes, allow subsequent loads
+    if (!recipientLogs.isFetching) {
+      loadingMoreRef.current = false;
+    }
+  }, [recipientLogs.isFetching]);
+
+  // Scroll handler (same logic as CommunicationsListPanel)
+  const handleScroll = (e: UIEvent<HTMLDivElement>) => {
+    if (!hasMore) return;
+    if (isFetching) return;
+    if (loadingMoreRef.current) return;
+
+    const el = e.currentTarget;
+    if (el.scrollTop + el.clientHeight >= el.scrollHeight - SCROLL_THRESHOLD_PX) {
+      loadingMoreRef.current = true;
+      // increment page number to trigger hook to fetch next page
+      setPageNumber((p) => p + 1);
+      // we will clear loadingMoreRef in the effect when fetching completes
+    }
+  };
 
   const { hasNextPage, hasPrevPage } = recipientLogs;
 
@@ -195,7 +231,20 @@ export function RecipientDetailsPanel({ commId, token, statuses = DEFAULT_STATUS
       )}
       {!recipientLogs.error && (
         <div className="mt-3">
-          <DataTable data={recipientLogs.rows} columns={columns} emptyText={recipientLogs.isLoading ? 'Loading recipients…' : 'No recipients found.'} />
+          <DataTable
+            data={rows}
+            columns={columns}
+            emptyText={recipientLogs.isLoading ? 'Loading recipients…' : 'No recipients found.'}
+            heightClassName="h-[440px]"
+            onScroll={handleScroll}
+            scrollRef={scrollRef}
+            footer={
+              <>
+                {isFetching ? <div className="py-3 text-center text-xs text-zinc-500">Loading…</div> : null}
+                {!hasMore && rows.length > 0 ? <div className="py-3 text-center text-xs text-zinc-500">All recipients loaded</div> : null}
+              </>
+            }
+          />
         </div>
       )}
     </div>
