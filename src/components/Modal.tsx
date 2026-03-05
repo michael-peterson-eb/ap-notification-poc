@@ -71,7 +71,7 @@ export function Modal({ open, onClose, title, children, closeOnBackdrop = true, 
       <div
         ref={panelRef}
         tabIndex={-1}
-        className="relative z-10 w-4/5 max-h-[90vh] overflow-hidden rounded-lg border bg-white shadow-xl ring-0 flex flex-col"
+        className="relative z-10 w-4/5 max-h-[90vh] overflow-hidden rounded-lg bg-white shadow-xl ring-0 flex flex-col"
         style={panelStyle}
         onClick={(e) => e.stopPropagation()}>
         <div className="flex-1 overflow-auto">{children}</div>
