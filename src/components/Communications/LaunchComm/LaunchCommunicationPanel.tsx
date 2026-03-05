@@ -180,7 +180,7 @@ const LaunchCommunicationPanel = ({ tokenResponse, permissions, setActiveTab }) 
   if (!permissions?.includes('bc.comms.launch')) return null;
 
   return (
-    <div className="w-full px-2 min-h-[60vh]">
+    <div className="w-full px-2 pb-24">
       <LaunchHeader
         title={title}
         description={description}

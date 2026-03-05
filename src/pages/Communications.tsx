@@ -67,7 +67,7 @@ function CommunicationsContent({ isDev, isStandalone }: { isDev?: boolean; isSta
 
   return (
     <div className={`h-full bg-white`}>
-      <div className="p-10 relative w-full h-full bg-repeat-y bg-[linear-gradient(146deg,rgba(224,237,255,0.41),rgba(218,217,255,0.50),rgba(224,235,255,0.41),rgba(233,240,255,0.50))]">
+      <div className="overflow-auto p-10 relative w-full h-full bg-repeat-y bg-[linear-gradient(146deg,rgba(224,237,255,0.41),rgba(218,217,255,0.50),rgba(224,235,255,0.41),rgba(233,240,255,0.50))]">
         <div className="flex-1 min-h-0 space-y-4 h-full">
           <CommsTabShell tokenResponse={tokenQuery} permissions={permissions} />
         </div>

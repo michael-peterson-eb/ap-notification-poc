@@ -15,7 +15,7 @@ type HeaderBarProps = {
 
 export default function HeaderBar({ title = 'Communications', logo, onRefresh, onMinimize, onToggleMaximize, onClose, className = '', rightNodes }: HeaderBarProps) {
   return (
-    <header className={`w-full bg-black text-white ${className}`}>
+    <header className={`w-full bg-black text-white ${className} sticky top-0 z-50`}>
       <div className="max-w-full mx-auto flex items-center justify-between h-12 px-4">
         <div className="flex items-center gap-3">
           {/* Logo: accept custom or fallback simple mark */}

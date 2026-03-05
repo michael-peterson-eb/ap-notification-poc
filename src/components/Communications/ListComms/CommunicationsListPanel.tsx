@@ -124,7 +124,7 @@ const CommunicationsListPanel = ({ tokenResponse, permissions, columns, onRowPre
   if (!permissions?.includes('bc.comms.list')) return null;
 
   return (
-    <div className="min-h-[60vh]">
+    <div className="px-1">
       <div className="mb-3 flex items-center justify-between gap-3 flex-nowrap">
         {/* Left */}
         <div className="flex items-center gap-2 flex-nowrap min-w-0">
