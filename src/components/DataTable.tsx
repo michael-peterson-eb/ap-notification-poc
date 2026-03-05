@@ -17,7 +17,7 @@ type Props<T> = {
   footer?: React.ReactNode;
 };
 
-export function DataTable<T>({ data, columns, emptyText = 'No results.', wrapperClassName = '', heightClassName = 'h-[440px]', onScroll, scrollRef, onRowPress, footer }: Props<T>) {
+export function DataTable<T>({ data, columns, emptyText = 'No results.', wrapperClassName = '', heightClassName = 'h-full min-h-[440px]', onScroll, scrollRef, onRowPress, footer }: Props<T>) {
   const table = useReactTable({ data, columns, getCoreRowModel: getCoreRowModel() });
 
   const [atTop, setAtTop] = React.useState(true);

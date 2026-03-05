@@ -225,12 +225,12 @@ export function RecipientDetailsPanel({ commId, token, statuses = DEFAULT_STATUS
     <div className="pt-8 pb-8">
       <span className="text-xl font-normal text-[#13151C]">Recipient Details</span>
       {recipientLogs.error && (
-        <div className="mt-3">
+        <div className="mt-2">
           <RecipientLogsError />
         </div>
       )}
       {!recipientLogs.error && (
-        <div className="mt-3">
+        <div className="mt-2">
           <DataTable
             data={rows}
             columns={columns}
