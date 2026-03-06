@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState, UIEvent, useEffect } from 'react';
+import React, { useMemo, useRef, useState, UIEvent, useEffect } from 'react';
 
 import { DataTable } from 'components/DataTable';
 import { useCommsList } from 'hooks/comms/list';
@@ -8,6 +8,7 @@ import { ThreadStatusSelect } from './ThreadStatusSelect';
 import { SearchByNameInput } from './SearchByNameInput';
 
 const SCROLL_THRESHOLD_PX = 120;
+const STORAGE_KEY = `comms-list-state-${params.id}`; // per-plan key
 
 type ThreadStatus = 'ACTIVE' | 'INACTIVE';
 type TabKey = 'launch' | 'list' | 'settings';
@@ -23,23 +24,50 @@ type Props = {
   tokenResponse: any;
   permissions?: string[];
   columns: any;
-  showListView: boolean;
+  showListView?: boolean;
   onRowPress: (comm: any) => void;
-  setActiveTab: (tab: TabKey) => void;
+  setActiveTab?: (tab: TabKey) => void;
 };
 
-const CommunicationsListPanel = ({ tokenResponse, permissions, columns, onRowPress, setActiveTab }: Props) => {
-  const [threadStatus, setThreadStatus] = useState<ThreadStatus>('ACTIVE');
-  const [fromDateStr, setFromDateStr] = useState<string>(() => getIsoStartOfDayFromDaysAgo(7));
-  const [search, setSearch] = useState('');
-  const [debouncedSearch, setDebouncedSearch] = useState('');
+export const CommunicationsListPanel = ({ tokenResponse, permissions, columns, onRowPress }: Props) => {
+  // Hydrate from sessionStorage (guarded for SSR)
+  let parsed: null | Record<string, any> = null;
+  if (typeof window !== 'undefined') {
+    try {
+      const raw = sessionStorage.getItem(STORAGE_KEY);
+      parsed = raw ? JSON.parse(raw) : null;
+    } catch {
+      parsed = null;
+    }
+  }
 
+  // State (visible UI state)
+  const [threadStatus, setThreadStatus] = useState<ThreadStatus>(() => parsed?.threadStatus ?? 'ACTIVE');
+  const [fromDateStr, setFromDateStr] = useState<string>(() => parsed?.fromDateStr ?? getIsoStartOfDayFromDaysAgo(30));
+  const [search, setSearch] = useState<string>(() => parsed?.search ?? '');
+  const [debouncedSearch, setDebouncedSearch] = useState<string>(() => parsed?.debouncedSearch ?? '');
+
+  // Refs
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const loadingMoreRef = useRef(false);
 
-  // These filters are still passed through:
-  // - dev/standalone: server-side filters in useComms
-  // - prod/by-ids: used as resetKey inside useCommsByIds (and we still client-filter rows)
+  // Persist to sessionStorage whenever key pieces of state change
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const payload = JSON.stringify({
+        threadStatus,
+        fromDateStr,
+        search,
+        debouncedSearch,
+      });
+      sessionStorage.setItem(STORAGE_KEY, payload);
+    } catch {
+      // ignore storage errors
+    }
+  }, [threadStatus, fromDateStr, search, debouncedSearch]);
+
+  // API filters
   const apiFilters = useMemo(() => {
     const base: Record<string, any> = {
       threadStatus,
@@ -48,6 +76,14 @@ const CommunicationsListPanel = ({ tokenResponse, permissions, columns, onRowPre
     };
     const q = debouncedSearch.trim();
     if (q) base.title = q;
+
+    // ALSO include boolean 'active' for endpoints that use that shape.
+    // This makes the client compatible with both response shapes while the
+    // backend standardizes. If your backend rejects unknown keys, move this
+    // mapping into the API client / useCommsList hook instead.
+    if (threadStatus === 'ACTIVE') base.active = true;
+    else if (threadStatus === 'INACTIVE') base.active = false;
+
     return base;
   }, [threadStatus, fromDateStr, debouncedSearch]);
 
@@ -58,12 +94,34 @@ const CommunicationsListPanel = ({ tokenResponse, permissions, columns, onRowPre
     filters: apiFilters,
   }) as any;
 
-  const commsRows = useMemo(() => comms?.rows, [comms?.rows]);
+  // Normalize rows so downstream code can rely on `threadStatus` always being a string enum
+  const normalizedCommsRows = useMemo(() => {
+    const rows = comms?.rows ?? [];
+    return rows.map((row: Record<string, any>) => {
+      // If backend already sends threadStatus, prefer that.
+      // Otherwise, if backend sent `active: boolean`, map it to the enum we use in UI.
+      let ts = row?.threadStatus;
+      if (!ts && typeof row?.active === 'boolean') {
+        ts = row.active ? 'ACTIVE' : 'INACTIVE';
+      }
+
+      // Some backends may send lowercase or mixed strings: normalize to upper enum
+      const normalizedTs = typeof ts === 'string' ? String(ts).toUpperCase() : undefined;
+
+      return {
+        ...row,
+        threadStatus: normalizedTs,
+      };
+    });
+  }, [comms?.rows]);
+
+  // Use normalized rows throughout
+  const commsRows = useMemo(() => normalizedCommsRows, [normalizedCommsRows]);
   const commsFetching = Boolean(comms?.isFetching);
   const hasMore = Boolean(comms?.hasMore);
   const loadMore = comms?.loadMore as undefined | (() => any);
 
-  // Client-side filtering (required for prod/by-ids; harmless in dev)
+  // Client-side filtering
   const filteredRows = useMemo(() => {
     const q = debouncedSearch.trim().toLowerCase();
     const fromMs = (() => {
@@ -71,19 +129,16 @@ const CommunicationsListPanel = ({ tokenResponse, permissions, columns, onRowPre
       return Number.isFinite(t) ? t : undefined;
     })();
 
-    return commsRows.filter((row) => {
-      // Status
+    return (commsRows || []).filter((row) => {
       const s = String(row?.threadStatus ?? '').toUpperCase();
       if (s && s !== threadStatus) return false;
 
-      // Date window (sent is ISO Z stamp)
       if (fromMs !== undefined) {
         const sentRaw = row?.sent;
         const sentMs = typeof sentRaw === 'string' ? Date.parse(sentRaw) : NaN;
         if (Number.isFinite(sentMs) && sentMs < fromMs) return false;
       }
 
-      // Search by title
       if (q) {
         const title = String(row?.title ?? '').toLowerCase();
         if (!title.includes(q)) return false;
@@ -93,6 +148,7 @@ const CommunicationsListPanel = ({ tokenResponse, permissions, columns, onRowPre
     });
   }, [commsRows, debouncedSearch, fromDateStr, threadStatus]);
 
+  // Infinite-scroll handler (we do NOT persist scroll position)
   const handleScroll = (e: UIEvent<HTMLDivElement>) => {
     if (!hasMore) return;
     if (commsFetching) return;
@@ -112,6 +168,7 @@ const CommunicationsListPanel = ({ tokenResponse, permissions, columns, onRowPre
     }
   };
 
+  // Debounce search input before applying to API / client filtering
   useEffect(() => {
     const t = setTimeout(() => setDebouncedSearch(search), 250);
     return () => clearTimeout(t);

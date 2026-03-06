@@ -71,10 +71,10 @@ export function Modal({ open, onClose, title, children, closeOnBackdrop = true, 
       <div
         ref={panelRef}
         tabIndex={-1}
-        className="relative z-10 w-[75%] !h-[85vh] !min-h-[85vh] overflow-hidden rounded-lg shadow-xl ring-0 flex flex-col bg-white"
+        className="relative z-10 w-[75%] !h-[85vh] !min-h-[85vh] rounded-lg shadow-xl ring-0 focus:ring-0 flex flex-col bg-white"
         style={panelStyle}
         onClick={(e) => e.stopPropagation()}>
-        <div className="flex-1 !overflow-hidden min-h-0 bg-[linear-gradient(146deg,rgba(224,237,255,0.41),rgba(218,217,255,0.50),rgba(224,235,255,0.41),rgba(233,240,255,0.50))]">{children}</div>
+       {children}
       </div>
     </div>
   );

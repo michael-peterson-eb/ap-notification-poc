@@ -2,13 +2,13 @@ import { RefreshCw } from 'lucide-react';
 
 export default function DetailHeaderBar({ onBack, onCommActive, comm, disabled, handleRefresh, isRefreshing }: any) {
   return (
-    <div className="flex justify-between mt-2">
+    <div className="flex justify-between">
       <div className="space-x-2">
-        <button onClick={onBack} className="text-[#405172] text-base font-normal">
+        <button onClick={onBack} className="text-[#405172] underline text-sm font-semibold pb-3">
           Communication List
         </button>
-        <span className="text-[#405172] text-base font-normal">/</span>
-        <span className="text-[#405172] text-base font-bold">Communication Details</span>
+        <span className="text-[#405172] text-sm font-normal pb-3">/</span>
+        <span className="text-[#405172] text-sm font-bold pb-3">Communication Details</span>
       </div>
 
       <div className="flex items-center">

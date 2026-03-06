@@ -132,7 +132,7 @@ export function CommDetailView({ commId, token, onBack, onCommActive }: Props) {
           <CommInfoPanel comm={comm} />
         </div>
         <div className="flex gap-6">
-          <div ref={leftRef} className="w-[450px] flex flex-col" style={{ maxHeight: `${leftPx}px` }}>
+          <div ref={leftRef} className="w-1/3 flex flex-col" style={{ maxHeight: `${leftPx}px` }}>
             <ActivitiesPanel confirmation={confirmation} commId={commId} comm={comm} token={token} />
           </div>
 

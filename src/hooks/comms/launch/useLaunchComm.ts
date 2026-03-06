@@ -59,7 +59,7 @@ async function postLaunchComm(params: { idToken: string; body: LaunchCommRequest
   return data; // expected 201 with { id: string }
 }
 
-export function useLaunchComm(tokenResponse: any, setActiveTab: any) {
+export function useLaunchComm(tokenResponse: any) {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -127,7 +127,6 @@ export function useLaunchComm(tokenResponse: any, setActiveTab: any) {
       } catch (e) {
         console.error('Failed to invalidate per-comm queries', e);
       }
-      setActiveTab('list');
     },
 
     onError: (err) => {
