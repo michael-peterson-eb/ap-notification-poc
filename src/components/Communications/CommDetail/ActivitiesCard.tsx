@@ -64,7 +64,7 @@ function MessageCard({ icon, messageTypeLabel, sentLine, cardTitle, subAction, r
       <div className="px-4">
         <div
           className="
-          bg-white px-5 py-4 border-2
+          bg-white !px-5 !py-4 border-2
             rounded-xl
             bg-[linear-gradient(0deg,rgba(29,100,232,0.01)_0%,rgba(29,100,232,0.01)_100%),linear-gradient(180deg,#fff_0%,#fdfdfd_100%)]
             shadow-[0_4px_8px_0_rgba(0,0,0,0.08),0_6px_30px_-4px_rgba(29,100,232,0.25)]

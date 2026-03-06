@@ -4,7 +4,7 @@ export default function DetailHeaderBar({ onBack, onCommActive, comm, disabled, 
   return (
     <div className="flex justify-between">
       <div className="space-x-2">
-        <button onClick={onBack} className="text-[#405172] underline text-sm font-semibold pb-3">
+        <button onClick={onBack} className="text-[#405172] underline text-sm font-normal pb-3">
           Communication List
         </button>
         <span className="text-[#405172] text-sm font-normal pb-3">/</span>
