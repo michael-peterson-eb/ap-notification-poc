@@ -57,6 +57,11 @@ function injectHeaderCommunicationsButton() {
         box-shadow: 0 0 0 4px rgba(0,90,230,0.18);
         border-radius: 8px;
       }
+      a[${BTN_ATTR}="1"]:active {
+        transform: translateY(1px) scale(0.995);
+        box-shadow: 0 1px 0 rgba(0,0,0,0.12) inset;
+        filter: brightness(0.92);
+      }
     `;
     const style = document.createElement('style');
     style.id = 'eb-communications-btn-styles';
@@ -128,14 +133,14 @@ function injectHeaderCommunicationsButton() {
     };
 
     a.addEventListener('click', onActivate, true);
-    a.addEventListener('mousedown', onActivate, true);
-    a.addEventListener(
-      'keydown',
-      (e: KeyboardEvent) => {
-        if (e.key === 'Enter' || e.key === ' ') onActivate(e);
-      },
-      true
-    );
+    // a.addEventListener('mousedown', onActivate, true);
+    // a.addEventListener(
+    //   'keydown',
+    //   (e: KeyboardEvent) => {
+    //     if (e.key === 'Enter' || e.key === ' ') onActivate(e);
+    //   },
+    //   true
+    // );
 
     const edit = toolbar.querySelector('a.rbs-marker-button-edit') as HTMLAnchorElement | null;
 
