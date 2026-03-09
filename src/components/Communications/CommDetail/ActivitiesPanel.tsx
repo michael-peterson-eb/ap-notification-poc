@@ -21,22 +21,34 @@ export function ActivitiesPanel({ confirmation, comm, commId, token, pageSize = 
       const is504 = status === 504;
       if (is404) {
         return (
-          <div className="bg-amber-50 ring-1 ring-amber-200 p-3 rounded-xl text-sm text-amber-900">
-            <div className="font-medium">We couldn’t find confirmation data yet.</div>
-            <div className="mt-1 text-amber-800">If you just created this communication, it can take a few seconds to become available. Please wait a moment and refresh.</div>
+          <div className="p-8">
+            <div className="bg-amber-50 ring-1 ring-amber-200 p-3 rounded-xl text-sm text-amber-900">
+              <div className="font-medium">We couldn’t find confirmation data yet.</div>
+              <div className="mt-1 text-amber-800">If you just created this communication, it can take a few seconds to become available. Please wait a moment and refresh.</div>
+            </div>
           </div>
         );
       }
 
       if (is504) {
         return (
-          <div className="bg-red-50 ring-1 ring-red-200 p-3 rounded-xl text-sm text-red-900">
-            <div className="font-medium">Gateway Timeout</div>
-            <div className="mt-1 text-red-800">The server took too long to respond. Please try again later.</div>
+          <div className="p-8">
+            <div className="bg-red-50 ring-1 ring-red-200 p-3 rounded-xl text-sm text-red-900">
+              <div className="font-medium">Gateway Timeout</div>
+              <div className="mt-1 text-red-800">The server took too long to respond. Please try again later.</div>
+            </div>
           </div>
         );
       }
-      return <pre className="text-red-700 bg-red-50 ring-1 ring-red-200 p-3 rounded-xl overflow-auto text-xs">{JSON.stringify(activities.error, null, 2)}</pre>;
+
+      return (
+        <div className="p-8">
+          <div className="bg-red-50 ring-1 ring-red-200 p-3 rounded-xl text-sm text-red-900">
+            <div className="font-medium">An error occurred</div>
+            <div className="mt-1 text-red-800">{err?.detail}</div>
+          </div>
+        </div>
+      );
     } else {
       return null;
     }
@@ -51,11 +63,7 @@ export function ActivitiesPanel({ confirmation, comm, commId, token, pageSize = 
 
         {/* Scrollable content */}
         <div className="flex-1 overflow-auto min-h-0">
-          {activities.error && (
-            <div className="p-8">
-              <ActivitiesError />
-            </div>
-          )}
+          <ActivitiesError />
 
           {activities?.isLoading && <div className="p-8">Loading activities…</div>}
 
