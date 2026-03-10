@@ -93,13 +93,13 @@ export function RecipientsPanel({ confirmation }: Props) {
       <div className="border-b border-[#76A5FF] px-8 py-4">
         <span className="text-xl font-normal text-[#13151C]">Confirmation Status</span>
       </div>
-      
+
       <ConfirmationError />
 
       {confirmation?.isLoading && <div className="p-8">Loading confirmation status…</div>}
       {!confirmation?.isLoading && !confirmation?.error && (
         <div className="flex p-8 gap-8">
-          <div
+          {/* <div
             className="w-64 shrink-0 h-full flex flex-col items-center rounded-xl p-6
                             border-2 border-[rgba(104,118,143,0.15)]
                             bg-[linear-gradient(0deg,rgba(29,100,232,0.01)_0%,rgba(29,100,232,0.01)_100%),linear-gradient(180deg,#FFF_0%,#FDFDFD_100%)]
@@ -127,7 +127,7 @@ export function RecipientsPanel({ confirmation }: Props) {
                 </PieChart>
               </ResponsiveContainer>
             </div>
-          </div>
+          </div> */}
           <div className="flex-1 rounded-xl p-6 bg-[rgba(29,100,232,0.02)] border border-[rgba(104,118,143,0.10)]">
             <div className="space-y-6">
               {statusRows.map((r) => (

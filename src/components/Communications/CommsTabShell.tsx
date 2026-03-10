@@ -30,6 +30,8 @@ const CommsTab = ({ tokenResponse, permissions }) => {
   const isStandalone = params.standaloneMode;
   const showListView = isDev || isStandalone;
 
+  console.log('Permissions: ', permissions, `CanList: ${canList}`, `CanLaunch: ${canLaunch}`);
+
   const { pushToast } = useToasts();
 
   const [activeTab, setActiveTab] = useState<TabKey>('list');

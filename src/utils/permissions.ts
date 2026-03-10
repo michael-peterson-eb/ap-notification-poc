@@ -94,6 +94,9 @@ export async function getCurrentUser(): Promise<CurrentUser> {
 export async function getValidPermissions(opts?: { env?: string }): Promise<Permission[]> {
   const env = opts?.env ?? process.env.NODE_ENV;
 
+  console.log('LIST USERS', params.listUsers);
+  console.log('LAUNCH USERS', params.launchUsers)
+
   // DEV: allow everything
   if (env !== 'production') {
     return [PERMISSIONS.LIST, PERMISSIONS.LAUNCH];
@@ -101,8 +104,12 @@ export async function getValidPermissions(opts?: { env?: string }): Promise<Perm
 
   const user = await getCurrentUser();
 
+  console.log('User Info:', user);
+
   const roleId = Number(user.CURR_USER_ROLE_ID);
   const roleCode = normalizeRoleCode(user.CURR_USER_ROLE_CODE);
+
+  console.log('Role Code',roleCode)
 
   const hasOverride = roleId === ROLE_ID_OVERRIDE;
 
