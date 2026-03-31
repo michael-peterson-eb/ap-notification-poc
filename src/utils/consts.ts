@@ -1,5 +1,6 @@
 type Params = {
   standaloneMode: boolean;
+  planRelationship: string;
   id: string;
   planType: string;
   variableSelections: { label: string; value: string }[];
@@ -16,6 +17,7 @@ type Params = {
 export const mockParams: Params = {
   standaloneMode: false,
   id: '480121753', // plan id in new feature tenant
+  planRelationship: 'R481285521',
   planType: 'Crisis Management',
   variableSelections: [
     { label: 'Plan', value: 'Mock Plan Name' },
@@ -36,14 +38,15 @@ function getParamsFromDom(): Params | null {
   if (typeof window === 'undefined') return null;
 
   const el = document.getElementById('rjs-params');
-  const params = el?.dataset.record;
+  const raw = el?.dataset.record;
 
-  if (!params) return null;
+  if (!raw) return null;
 
-  const parsed = JSON.parse(params) as Params;
+  const parsed = JSON.parse(raw) as Params;
+
+  parsed.variableSelections = parsed.variableSelections.map((item) => (item.label === 'Plan Link' ? { ...item, value: window.location.href } : item));
 
   console.log('Parsed rjs-params:', parsed);
-
   return parsed;
 }
 

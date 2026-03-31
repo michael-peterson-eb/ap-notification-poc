@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { params } from 'utils/consts';
 
 type RBClient = {
   getRelatedIds: (relId: string, objName: string, recordId: string) => Promise<Array<string | number>>;
@@ -31,7 +32,7 @@ export function usePlanCommIds(planId?: string, enabled: boolean = true) {
       const rb = getRB();
 
       // Step 1: related notification record IDs (LCAP ids)
-      const notificationIds = await rb.getRelatedIds('R481285521', 'EA_SA_Plan', String(planId));
+      const notificationIds = await rb.getRelatedIds(params.planRelationship, 'EA_SA_Plan', String(planId));
 
       const cleanNotifIds = (notificationIds ?? []).map((x) => String(x).trim()).filter(Boolean);
 

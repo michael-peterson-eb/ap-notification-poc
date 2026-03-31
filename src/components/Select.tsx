@@ -22,7 +22,6 @@ export function Select({ children, isLoading, loadingText = 'Loading…', classN
   const buttonRef = useRef<HTMLButtonElement | null>(null);
   const menuRef = useRef<HTMLDivElement | null>(null);
 
-  // build options array from children (expecting <option value="...">Label</option> usage)
   const options = useMemo(() => {
     const arr: Array<{ value: string; label: string; disabled?: boolean }> = [];
     React.Children.forEach(children, (child) => {
@@ -33,21 +32,19 @@ export function Select({ children, isLoading, loadingText = 'Loading…', classN
   }, [children]);
 
   const selectedValue = String(value ?? '');
-  // find selected label or placeholder (option with empty value)
   const selectedOption = options.find((o) => o.value === selectedValue) ?? null;
   const placeholderOption = options.find((o) => o.value === '') ?? null;
 
   const [open, setOpen] = useState(false);
   const [highlightIndex, setHighlightIndex] = useState<number | null>(null);
-
-  // position menu in viewport using button bounding rect (portal)
   const [menuStyle, setMenuStyle] = useState<React.CSSProperties>({});
 
   const computeMenuPosition = useCallback(() => {
     const btn = buttonRef.current;
     if (!btn) return;
+
     const rect = btn.getBoundingClientRect();
-    // position directly under button, full width of button
+
     setMenuStyle({
       position: 'absolute',
       top: rect.bottom + window.scrollY + 8,
@@ -57,11 +54,22 @@ export function Select({ children, isLoading, loadingText = 'Loading…', classN
     });
   }, []);
 
+  const isFocusInside = useCallback((target: EventTarget | null) => {
+    const node = target as Node | null;
+    if (!node) return false;
+
+    return !!((containerRef.current && containerRef.current.contains(node)) || (menuRef.current && menuRef.current.contains(node)));
+  }, []);
+
   useEffect(() => {
-    if (open) computeMenuPosition();
+    if (open) {
+      computeMenuPosition();
+      requestAnimationFrame(() => {
+        menuRef.current?.focus();
+      });
+    }
   }, [open, computeMenuPosition]);
 
-  // close on outside click / escape
   useEffect(() => {
     function onDocClick(e: MouseEvent) {
       const target = e.target as Node | null;
@@ -70,6 +78,13 @@ export function Select({ children, isLoading, loadingText = 'Loading…', classN
       if (menuRef.current && menuRef.current.contains(target)) return;
       setOpen(false);
     }
+
+    function onFocusIn(e: FocusEvent) {
+      if (!open) return;
+      if (isFocusInside(e.target)) return;
+      setOpen(false);
+    }
+
     function onKey(e: KeyboardEvent) {
       if (!open) return;
       if (e.key === 'Escape') {
@@ -78,31 +93,34 @@ export function Select({ children, isLoading, loadingText = 'Loading…', classN
         buttonRef.current?.focus();
       }
     }
+
     window.addEventListener('click', onDocClick);
+    window.addEventListener('focusin', onFocusIn);
     window.addEventListener('keydown', onKey);
     window.addEventListener('resize', computeMenuPosition);
     window.addEventListener('scroll', computeMenuPosition, true);
+
     return () => {
       window.removeEventListener('click', onDocClick);
+      window.removeEventListener('focusin', onFocusIn);
       window.removeEventListener('keydown', onKey);
       window.removeEventListener('resize', computeMenuPosition);
       window.removeEventListener('scroll', computeMenuPosition, true);
     };
-  }, [open, computeMenuPosition]);
+  }, [open, computeMenuPosition, isFocusInside]);
 
-  // keyboard navigation inside button (open/close) and inside list (arrows/enter)
   useEffect(() => {
     if (!open) {
       setHighlightIndex(null);
       return;
     }
+
     const idx = options.findIndex((o) => o.value === selectedValue && !o.disabled);
     setHighlightIndex(idx >= 0 ? idx : options.findIndex((o) => !o.disabled));
   }, [open, options, selectedValue]);
 
   function triggerOnChange(nextValue: string) {
     if (typeof onChange === 'function') {
-      // imitate native event shape
       onChange({ target: { value: nextValue } } as unknown as any);
     }
   }
@@ -121,17 +139,22 @@ export function Select({ children, isLoading, loadingText = 'Loading…', classN
 
   const handleButtonKeyDown = (e: React.KeyboardEvent) => {
     if (disabled) return;
+
     if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
       e.preventDefault();
+
       if (!open) {
         setOpen(true);
         return;
       }
+
       setHighlightIndex((cur) => {
         const enabled = options.map((o, i) => ({ o, i })).filter(({ o }) => !o.disabled);
         if (!enabled.length) return null;
+
         const indices = enabled.map((x) => x.i);
         if (cur == null) return indices[0];
+
         const pos = indices.indexOf(cur);
         if (e.key === 'ArrowDown') {
           return indices[(pos + 1) % indices.length];
@@ -150,11 +173,14 @@ export function Select({ children, isLoading, loadingText = 'Loading…', classN
   const handleMenuKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
       e.preventDefault();
+
       setHighlightIndex((cur) => {
         const enabled = options.map((o, i) => ({ o, i })).filter(({ o }) => !o.disabled);
         if (!enabled.length) return null;
+
         const indices = enabled.map((x) => x.i);
         if (cur == null) return indices[0];
+
         const pos = indices.indexOf(cur);
         if (e.key === 'ArrowDown') {
           return indices[(pos + 1) % indices.length];
@@ -174,16 +200,14 @@ export function Select({ children, isLoading, loadingText = 'Loading…', classN
       e.preventDefault();
       setOpen(false);
       buttonRef.current?.focus();
+    } else if (e.key === 'Tab') {
+      setOpen(false);
     }
   };
 
-  // caret rotation class (use transform-gpu + origin-center to avoid weird 3D flips)
   const caretClass = open ? 'rotate-0 transform-gpu' : 'rotate-180 transform-gpu';
-
-  // render selected label: if selected is placeholder (value === ''), show placeholderOption label styled lighter
   const displayLabel = selectedOption ? selectedOption.label : placeholderOption ? placeholderOption.label : '';
 
-  // styling constants - tuned to your mock
   const controlBase = 'w-full rounded bg-white border px-3 py-2.5 text-lg text-zinc-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-200 disabled:bg-zinc-50 disabled:text-zinc-400';
 
   return (
@@ -206,7 +230,6 @@ export function Select({ children, isLoading, loadingText = 'Loading…', classN
             className={[controlBase, 'flex items-center justify-between', disabled ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer', 'border !border-[#76A5FF]'].join(' ')}>
             <span className={`text-base text-[#405172] font-normal truncate text-left ${selectedOption ? '' : 'text-zinc-400'}`}>{displayLabel}</span>
 
-            {/* caret */}
             <div className={`inline-block transition-transform duration-150 ${caretClass}`}>
               <Triangle size={6} fill="#405172" />
             </div>
@@ -225,11 +248,13 @@ export function Select({ children, isLoading, loadingText = 'Loading…', classN
                   {options.map((opt, idx) => {
                     const isHighlighted = highlightIndex === idx;
                     const isSelected = selectedValue === opt.value;
+
                     return (
                       <div
                         id={`select-opt-${idx}`}
                         key={opt.value + '-' + idx}
                         role="option"
+                        tabIndex={-1}
                         aria-selected={isSelected}
                         onClick={() => handleOptionClick(opt)}
                         onMouseEnter={() => setHighlightIndex(idx)}
@@ -237,7 +262,6 @@ export function Select({ children, isLoading, loadingText = 'Loading…', classN
                           'px-3 py-2.5 cursor-pointer select-none flex items-center justify-between',
                           opt.disabled ? 'opacity-40 cursor-not-allowed' : 'hover:bg-zinc-100',
                           isHighlighted ? 'bg-zinc-100' : '',
-                          // selected style: blue background + white text
                           isSelected ? 'bg-blue-100 text-black' : '',
                         ].join(' ')}
                         style={{ userSelect: 'none' }}>

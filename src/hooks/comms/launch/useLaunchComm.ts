@@ -77,7 +77,7 @@ export function useLaunchComm(tokenResponse: any) {
           // @ts-ignore attached to window
           _RB.createRecord?.('EA_SA_Notification', {
             ebNotificationId: response.id,
-            R481285521: params.id,
+            [params.planRelationship]: params.id,
             objectType: '$DEFAULT',
           });
         } catch (e) {
