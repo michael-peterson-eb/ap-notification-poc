@@ -120,7 +120,8 @@ export function PreviewMessages({ contents, variables, valuesById, defaultOpen, 
               <div className="mt-1.5 space-y-4">
                 {items.map((c, idx) => {
                   const interpolated = interpolateTemplate(c.content ?? '', valueIndex);
-                  const title = c.title?.trim();
+                  const rawTitle = c.title?.trim();
+                  const title = rawTitle ? interpolateTemplate(rawTitle, valueIndex) : '';
                   const html = isHtmlContentType(c.contentType);
 
                   const safeHtml = html ? DOMPurify.sanitize(interpolated) : '';
@@ -128,12 +129,15 @@ export function PreviewMessages({ contents, variables, valuesById, defaultOpen, 
                   return (
                     // No grey background; keep spacing/padding similar
                     <div key={idx} className="rounded-xl px-4 py-2">
-                      {title ? <div className="text-sm font-semibold text-zinc-900 mb-2">{title}</div> : null}
+                      {title ? <div className="text-sm font-semibold text-zinc-900 mb-2">Subject: {title}</div> : null}
 
                       {html ? (
-                        <div className="text-sm text-zinc-800 prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: safeHtml }} />
+                        <>
+                          <span className="text-sm text-zinc-800 prose prose-sm max-w-none">Message:</span>
+                          <div className="text-sm text-zinc-800 prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: safeHtml }} />
+                        </>
                       ) : (
-                        <div className="text-sm text-zinc-800 whitespace-pre-wrap">{interpolated || <span className="text-zinc-400">No content</span>}</div>
+                        <div className="text-sm text-zinc-800 whitespace-pre-wrap">Message: {interpolated || <span className="text-zinc-400">No content</span>}</div>
                       )}
                     </div>
                   );

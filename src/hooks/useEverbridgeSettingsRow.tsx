@@ -9,6 +9,14 @@ export type EverbridgeSettingsRow = {
   eb_role_id: string;
 };
 
+function isNonEmptyString(value: unknown) {
+  return typeof value === 'string' && value.trim() !== '';
+}
+
+export function hasStoredCredentials(row: Pick<EverbridgeSettingsRow, 'eb_client_id' | 'eb_username' | 'eb_role_id'> | null | undefined) {
+  return isNonEmptyString(row?.eb_client_id) && isNonEmptyString(row?.eb_username) && isNonEmptyString(row?.eb_role_id);
+}
+
 function toStr(v: any) {
   return v == null ? '' : String(v);
 }
