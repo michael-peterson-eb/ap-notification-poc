@@ -47,7 +47,7 @@ function CommunicationsApp({ isDev, isStandalone }: AppProps) {
       title: result.error ? 'Unable to verify credentials' : 'Everbridge credentials required',
       message: result.error
         ? 'We could not verify your Everbridge credentials. Update them in Integrations Configuration and try again.'
-        : 'Update eb_client_id, eb_username, and eb_role_id in Integrations Configuration before opening Communications.',
+        : 'Update your credentials in Integrations Configuration before opening Communications.',
     });
   }, [isDev, isStandalone, pushToast, refetchSettingsRow, settingsRow]);
 
@@ -80,7 +80,5 @@ function CommunicationsApp({ isDev, isStandalone }: AppProps) {
     };
   }, []);
 
-  return (
-    <Communications open={open} onOpenChange={setOpen} isStandalone={isStandalone} isDev={isDev} />
-  );
+  return <Communications open={open} onOpenChange={setOpen} isStandalone={isStandalone} isDev={isDev} />;
 }
