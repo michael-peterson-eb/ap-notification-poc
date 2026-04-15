@@ -62,6 +62,19 @@ export function Select({ children, isLoading, loadingText = 'Loading…', classN
     return !!((containerRef.current && containerRef.current.contains(node)) || (menuRef.current && menuRef.current.contains(node)));
   }, []);
 
+  const isEventInside = useCallback(
+    (event: Event) => {
+      const path = typeof event.composedPath === 'function' ? event.composedPath() : [];
+
+      if (path.length > 0) {
+        return !![containerRef.current, menuRef.current].find((node) => node && path.includes(node));
+      }
+
+      return isFocusInside(event.target);
+    },
+    [isFocusInside]
+  );
+
   useEffect(() => {
     if (open) {
       computeMenuPosition();
@@ -72,17 +85,15 @@ export function Select({ children, isLoading, loadingText = 'Loading…', classN
   }, [open, computeMenuPosition]);
 
   useEffect(() => {
-    function onDocClick(e: MouseEvent) {
-      const target = e.target as Node | null;
+    function onPointerDown(e: PointerEvent) {
       if (!open) return;
-      if (containerRef.current && containerRef.current.contains(target)) return;
-      if (menuRef.current && menuRef.current.contains(target)) return;
+      if (isEventInside(e)) return;
       setOpen(false);
     }
 
     function onFocusIn(e: FocusEvent) {
       if (!open) return;
-      if (isFocusInside(e.target)) return;
+      if (isEventInside(e)) return;
       setOpen(false);
     }
 
@@ -95,20 +106,20 @@ export function Select({ children, isLoading, loadingText = 'Loading…', classN
       }
     }
 
-    window.addEventListener('click', onDocClick);
-    window.addEventListener('focusin', onFocusIn);
+    document.addEventListener('pointerdown', onPointerDown, true);
+    document.addEventListener('focusin', onFocusIn);
     window.addEventListener('keydown', onKey);
     window.addEventListener('resize', computeMenuPosition);
     window.addEventListener('scroll', computeMenuPosition, true);
 
     return () => {
-      window.removeEventListener('click', onDocClick);
-      window.removeEventListener('focusin', onFocusIn);
+      document.removeEventListener('pointerdown', onPointerDown, true);
+      document.removeEventListener('focusin', onFocusIn);
       window.removeEventListener('keydown', onKey);
       window.removeEventListener('resize', computeMenuPosition);
       window.removeEventListener('scroll', computeMenuPosition, true);
     };
-  }, [open, computeMenuPosition, isFocusInside]);
+  }, [open, computeMenuPosition, isEventInside]);
 
   useEffect(() => {
     if (!open) {
@@ -245,7 +256,7 @@ export function Select({ children, isLoading, loadingText = 'Loading…', classN
                 tabIndex={-1}
                 onKeyDown={handleMenuKeyDown}
                 style={menuStyle}>
-                <div className="bg-white rounded shadow-lg ring-1 ring-black ring-opacity-5" style={{ maxHeight: 320, overflow: 'auto' }}>
+                <div className="bg-white rounded shadow-lg ring-1 ring-black ring-opacity-5 text-sm" style={{ maxHeight: 320, overflow: 'auto' }}>
                   {options.map((opt, idx) => {
                     const isHighlighted = highlightIndex === idx;
                     const isSelected = selectedValue === opt.value;
@@ -260,13 +271,13 @@ export function Select({ children, isLoading, loadingText = 'Loading…', classN
                         onClick={() => handleOptionClick(opt)}
                         onMouseEnter={() => setHighlightIndex(idx)}
                         className={[
-                          'px-3 py-2.5 cursor-pointer select-none flex items-center justify-between',
+                          'px-3 py-2.5 cursor-pointer select-none flex items-center justify-between text-sm',
                           opt.disabled ? 'opacity-40 cursor-not-allowed' : 'hover:bg-zinc-100',
                           isHighlighted ? 'bg-zinc-100' : '',
                           isSelected ? 'bg-blue-100 text-black' : '',
                         ].join(' ')}
                         style={{ userSelect: 'none' }}>
-                        <span className={opt.disabled ? 'text-zinc-100' : 'text-[#405172]'}>{opt.label}</span>
+                        <span className={opt.disabled ? 'text-sm text-zinc-100' : 'text-sm text-[#405172]'}>{opt.label}</span>
                       </div>
                     );
                   })}
