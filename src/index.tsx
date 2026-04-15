@@ -88,6 +88,7 @@ function injectHeaderCommunicationsButton() {
   const BTN_ID = 'eb-notifications-toolbar-button';
   const BOUND_ATTR = 'data-eb-notifications-bound';
   const TOOLBAR_ATTR = 'data-eb-notifications-toolbar';
+  const BTN_ICON_ATTR = 'data-eb-notifications-icon';
   const REFLOW_DELAYS = [0, 100, 300, 800];
   const TOOLBAR_SELECTOR = 'div.rbs-pageheader-toolbar.k-toolbar';
 
@@ -127,7 +128,13 @@ function injectHeaderCommunicationsButton() {
       [${BTN_ATTR}="1"] .k-icon,
       [${BTN_ATTR}="1"] .fa {
         color: inherit;
+        display: inline-flex;
+        align-items: center;
         margin-right: 0 !important;
+      }
+      [${BTN_ATTR}="1"] .k-button-icon svg {
+        display: block;
+        flex: 0 0 auto;
       }
       [${BTN_ATTR}="1"] .k-button-text {
         color: inherit;
@@ -198,7 +205,55 @@ function injectHeaderCommunicationsButton() {
     button.setAttribute(BOUND_ATTR, '1');
   };
 
+  const createButtonIcon = () => {
+    const iconWrap = document.createElement('span');
+    iconWrap.className = 'k-button-icon';
+    iconWrap.setAttribute(BTN_ICON_ATTR, '1');
+    iconWrap.setAttribute('aria-hidden', 'true');
+
+    const svgNS = 'http://www.w3.org/2000/svg';
+    const svg = document.createElementNS(svgNS, 'svg');
+    svg.setAttribute('xmlns', svgNS);
+    svg.setAttribute('width', '17');
+    svg.setAttribute('height', '12');
+    svg.setAttribute('viewBox', '0 0 17 12');
+    svg.setAttribute('fill', 'none');
+    svg.setAttribute('aria-hidden', 'true');
+    svg.setAttribute('focusable', 'false');
+
+    const path = document.createElementNS(svgNS, 'path');
+    path.setAttribute(
+      'd',
+      'M16.7354 0C12.4998 0 8.55986 2.2773 6.45263 5.94384L6.45065 5.94712C6.44668 5.95369 6.40104 6.03646 6.32763 6.18359C4.76209 4.50205 2.57417 3.54436 0.264561 3.54436H0V7.13274H0.264561C2.82352 7.13274 4.90561 9.19853 4.90561 11.7373V12H8.52745L8.52216 11.732C8.52216 11.7182 8.50165 10.3651 9.09824 8.74925C10.2385 5.66271 13.3081 3.58903 16.7354 3.58903H17V0H16.7354ZM0.529121 6.61317V4.07379C2.66412 4.14604 4.66883 5.09256 6.08423 6.69987C6.06505 6.74323 6.04521 6.78789 6.0247 6.83453C5.73898 7.49466 5.32031 8.60211 5.08419 9.88166C4.36393 8.04445 2.60658 6.71761 0.529121 6.61317ZM5.4387 11.4739C5.49294 9.7273 6.07299 8.07795 6.45925 7.16295C7.40902 8.42476 7.93549 9.90793 7.98841 11.4739H5.4387ZM16.4709 3.06683C12.9297 3.17062 9.78874 5.35464 8.60153 8.5673C8.45602 8.96207 8.34556 9.3391 8.2609 9.68854C7.98907 8.64415 7.50889 7.66019 6.83228 6.78001C6.78796 6.72286 6.74563 6.66835 6.70463 6.61711C6.82368 6.36685 6.90437 6.2184 6.91297 6.20264C8.88262 2.77716 12.5269 0.621381 16.4709 0.528765V3.06683Z'
+    );
+    path.setAttribute('fill', 'white');
+
+    svg.appendChild(path);
+    iconWrap.appendChild(svg);
+    return iconWrap;
+  };
+
+  const ensureButtonContent = (button: HTMLElement) => {
+    const currentLabel = button.querySelector('.k-button-text, .k-text') as HTMLElement | null;
+    const labelText = (currentLabel?.textContent ?? button.textContent ?? 'Communications').trim() || 'Communications';
+    const hasExpectedIcon = !!button.querySelector(`[${BTN_ICON_ATTR}="1"]`);
+
+    if (hasExpectedIcon && currentLabel) {
+      currentLabel.textContent = labelText;
+      return;
+    }
+
+    button.replaceChildren();
+
+    const label = document.createElement('span');
+    label.className = 'k-button-text';
+    label.textContent = labelText;
+
+    button.append(createButtonIcon(), label);
+  };
+
   const styleButton = (button: HTMLElement) => {
+    ensureButtonContent(button);
     button.setAttribute(BTN_ATTR, '1');
     button.id = BTN_ID;
     button.setAttribute('aria-label', 'Open Communications');
