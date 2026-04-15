@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { RotateCw, Triangle } from 'lucide-react';
+import { getPortalContainer } from 'domScope';
 
 type SelectProps = React.SelectHTMLAttributes<HTMLSelectElement> & {
   isLoading?: boolean;
@@ -271,7 +272,7 @@ export function Select({ children, isLoading, loadingText = 'Loading…', classN
                   })}
                 </div>
               </div>,
-              document.body
+              getPortalContainer()
             )}
         </>
       )}

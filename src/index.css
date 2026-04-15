@@ -4,14 +4,13 @@
 
 
 @layer base {
-  html {
+  :host {
     font-size: 16px !important; /* try 17px or 18px if you want */
-  }
-  body {
     @apply text-base;
   }
 }
 
+:host,
 :root {
   /* Base (light mode) colors */
   --background: 0 0% 100%;
