@@ -116,7 +116,7 @@ function injectHeaderCommunicationsButton() {
         box-sizing: border-box;
         display: inline-flex !important;
         align-items: center;
-        gap: 8px;
+        gap: 2px;
         height: 32px !important;
         padding: 6px 16px !important;
         white-space: nowrap;
